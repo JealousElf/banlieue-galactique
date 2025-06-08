@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Banlieue Galactique</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      background: #000014;
+      font-family: monospace;
+      height: 100vh;
+      width: 100vw;
+    }
+
+    #gameContainer {
+      position: fixed;
+      top: 20px; left: 20px; right: 20px; bottom: 20px;
+      border: 3px solid #00ffcc;
+      border-radius: 15px;
+      box-shadow: 0 0 20px 5px #4caf50, inset 0 0 20px 2px #00ffff;
+      background: #111133;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    #gameCanvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    #info, #reloadMessage {
+      position: fixed;
+      color: white;
+      z-index: 100;
+      background: rgba(0,0,0,0.5);
+      padding: 10px;
+      border-radius: 8px;
+    }
+
+    #info {
+      top: 10px;
+      left: 10px;
+    }
+
+    #reloadMessage {
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 20px;
+      display: none;
+      z-index: 3000;
+    }
+
+    #menus {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.85);
+      display: none;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+      color: white;
+      font-size: 20px;
+    }
+
+    button {
+      margin: 10px;
+      padding: 10px 20px;
+      border-radius: 10px;
+      border: none;
+      background: #4caf50;
+      color: white;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #388e3c;
+    }
+
+    input {
+      padding: 10px;
+      font-size: 16px;
+      border-radius: 8px;
+      border: none;
+      margin-bottom: 10px;
+    }
+  </style>
+<link rel="manifest" href="manifest.json" />
+<meta name="theme-color" content="#4caf50" />
+
+</head>
+<body>
+  <div id="gameContainer">
+    <canvas id="gameCanvas"></canvas>
+  </div>
+
+  <div id="info">Munitions: <span id="ammoCount">25</span> | Vie: <span id="healthCount">3</span> | Vague: <span id="waveCount">1</span> | Score: <span id="scoreCount">0</span></div>
+  <div id="menus"></div>
+  <div id="reloadMessage">Appuie sur R pour recharger !</div>
+
+<script>
+  const canvas = document.getElementById("gameCanvas");
+  const ctx = canvas.getContext("2d");
+  const container = document.getElementById("gameContainer");
+
+  let width, height;
+
+  // Canvas offscreen pour fond fixe
+  const backgroundCanvas = document.createElement('canvas');
+  const bgCtx = backgroundCanvas.getContext('2d');
+
+  function resizeCanvas() {
+    canvas.width = container.clientWidth;
+    canvas.height = container.clientHeight;
+    width = canvas.width;
+    height = canvas.height;
+
+    backgroundCanvas.width = width;
+    backgroundCanvas.height = height;
+
+    createBackground();
+  }
+  window.addEventListener('resize', resizeCanvas);
+
+  // Variables du jeu
+  const menus = document.getElementById('menus');
+  const reloadMessage = document.getElementById('reloadMessage');
+  const info = document.getElementById('info');
+  const ammoDisplay = document.getElementById('ammoCount');
+  const healthDisplay = document.getElementById('healthCount');
+  const waveDisplay = document.getElementById('waveCount');
+  const scoreDisplay = document.getElementById('scoreCount');
+
+  let gameStarted = false, gameOver = false, pendingUpgrade = false, isPaused = false;
+  let playerName = "MC Alex";
+  let damageBonus = 0, wave = 1, score = 0;
+  let mouseX, mouseY;
+  let bulletSpeed = 10;
+
+  const player = { x: 0, y: 0, angle: 0, speed: 3, size: 20, ammo: 25, reloadTime: 1500, isReloading: false, health: 3, multiShot: false, bigBullets: false };
+  const chats = [];
+  let enemies = [], bullets = [], croixNoisette = [];
+
+  const keys = {};
+
+  // Initial setup after canvas sizing
+  function initGamePositions() {
+    player.x = width / 2;
+    player.y = height / 2;
+    mouseX = width / 2;
+    mouseY = height / 2;
+    chats.length = 0;
+    chats.push({ x: player.x - 50, y: player.y - 50, size: 15, speed: 2 });
+  }
+
+  // Event listeners
+  window.addEventListener('keydown', e => {
+    const key = e.key.toLowerCase();
+    keys[key] = true;
+    if (key === 'r' && !player.isReloading && player.ammo < 25) reload();
+    if (key === 'escape' && gameStarted && !gameOver && !pendingUpgrade) togglePause();
+  });
+
+  window.addEventListener('keyup', e => keys[e.key.toLowerCase()] = false);
+
+  window.addEventListener('mousedown', () => {
+    if (!isPaused) shoot();
+  });
+
+  window.addEventListener('mousemove', e => {
+    const rect = container.getBoundingClientRect();
+    mouseX = e.clientX - rect.left;
+    mouseY = e.clientY - rect.top;
+  });
+
+  // Gestion fond fixe
+  function createBackground() {
+    // Fond herbe clair
+    bgCtx.fillStyle = '#88cc55';
+    bgCtx.fillRect(0, 0, width, height);
+
+    // Détails herbe
+    for (let i = 0; i < 300; i++) {
+      const x = Math.random() * width;
+      const y = Math.random() * height;
+      const size = Math.random() * 2 + 1;
+      bgCtx.fillStyle = `rgba(34, 85, 12, ${Math.random() * 0.5 + 0.3})`;
+      bgCtx.beginPath();
+      bgCtx.ellipse(x, y, size * 0.5, size, 0, 0, Math.PI * 2);
+      bgCtx.fill();
+    }
+
+    // Fleurs stylisées
+    const flowerColors = ['#ff6699', '#ffcc33', '#ff9966', '#ff66cc', '#cc3366'];
+    for (let i = 0; i < 50; i++) {
+      const x = Math.random() * width;
+      const y = Math.random() * height;
+      const petalSize = 5;
+      const centerColor = flowerColors[Math.floor(Math.random() * flowerColors.length)];
+
+      for (let angle = 0; angle < 2 * Math.PI; angle += Math.PI / 2) {
+        bgCtx.fillStyle = 'white';
+        bgCtx.beginPath();
+        bgCtx.ellipse(
+          x + Math.cos(angle) * petalSize,
+          y + Math.sin(angle) * petalSize,
+          petalSize * 0.6,
+          petalSize * 0.9,
+          angle,
+          0,
+          Math.PI * 2
+        );
+        bgCtx.fill();
+      }
+
+      bgCtx.fillStyle = centerColor;
+      bgCtx.beginPath();
+      bgCtx.arc(x, y, petalSize * 0.8, 0, Math.PI * 2);
+      bgCtx.fill();
+    }
+  }
+
+  function drawBackground() {
+    ctx.drawImage(backgroundCanvas, 0, 0);
+  }
+
+  // Fonctions de jeu
+
+  function togglePause() {
+    isPaused = !isPaused;
+    if (isPaused) {
+      showMenu('<div>Jeu en pause</div><button onclick="togglePause()">Reprendre</button>');
+      info.style.display = 'none';
+    } else {
+      menus.style.display = 'none';
+      info.style.display = 'block';
+      loop();
+    }
+  }
+
+  function bordure() {
+    player.x = Math.max(player.size, Math.min(width - player.size, player.x));
+    player.y = Math.max(player.size, Math.min(height - player.size, player.y));
+  }
+
+  function showMenu(content) {
+    menus.innerHTML = '';
+    menus.style.display = 'flex';
+    if (typeof content === 'string') menus.innerHTML = content;
+    else menus.appendChild(content);
+  }
+
+  function startGame() {
+    gameStarted = true;
+    gameOver = false;
+    pendingUpgrade = false;
+    isPaused = false;
+    damageBonus = 0;
+    wave = 1;
+    score = 0;
+    player.health = 3;
+    player.ammo = 25;
+    player.multiShot = false;
+    player.bigBullets = false;
+    bulletSpeed = 10;
+    ammoDisplay.textContent = player.ammo;
+    healthDisplay.textContent = player.health;
+    waveDisplay.textContent = wave;
+    scoreDisplay.textContent = score;
+    menus.style.display = 'none';
+    info.style.display = 'block';
+    initGamePositions();
+    spawnEnemies();
+    loop();
+  }
+
+  function reload() {
+    player.isReloading = true;
+    player.reloadStartTime = Date.now();
+    setTimeout(() => {
+      player.ammo = 25;
+      ammoDisplay.textContent = player.ammo;
+      player.isReloading = false;
+    }, player.reloadTime);
+  }
+
+  function shoot() {
+    if (!gameStarted || player.isReloading || gameOver || pendingUpgrade || isPaused) return;
+    if (player.ammo <= 0) {
+      reloadMessage.style.display = 'block';
+      setTimeout(() => reloadMessage.style.display = 'none', 1500);
+      return;
+    }
+    player.ammo--;
+    ammoDisplay.textContent = player.ammo;
+    const bulletSize = player.bigBullets ? 10 : 5;
+    if (player.multiShot) {
+      bullets.push({ x: player.x, y: player.y, angle: player.angle + 0.1, size: bulletSize });
+      bullets.push({ x: player.x, y: player.y, angle: player.angle - 0.1, size: bulletSize });
+    } else {
+      bullets.push({ x: player.x, y: player.y, angle: player.angle, size: bulletSize });
+    }
+  }
+
+  function update() {
+    if (!gameStarted || gameOver || pendingUpgrade) return;
+    if (keys['z']) player.y -= player.speed;
+    if (keys['s']) player.y += player.speed;
+    if (keys['q']) player.x -= player.speed;
+    if (keys['d']) player.x += player.speed;
+
+    bordure();
+
+    const dx = mouseX - player.x, dy = mouseY - player.y;
+    player.angle = Math.atan2(dy, dx);
+
+    // Update bullets safely (backwards loop to avoid skipping on splice)
+    for (let i = bullets.length - 1; i >= 0; i--) {
+      const b = bullets[i];
+      b.x += Math.cos(b.angle) * bulletSpeed;
+      b.y += Math.sin(b.angle) * bulletSpeed;
+
+      // Check collisions with enemies
+      for (const e of enemies) {
+        if (e.alive && Math.hypot(b.x - e.x, b.y - e.y) < e.size + b.size) {
+          e.hp -= 1 + damageBonus;
+          if (e.hp <= 0) {
+            e.alive = false;
+            if (e.isBoss) {
+              const reward = Math.random() < 0.5 ? 'multiShot' : 'bigBullets';
+              if (reward === 'multiShot') player.multiShot = true;
+              else if (reward === 'bigBullets') player.bigBullets = true;
+            }
+            score++;
+            scoreDisplay.textContent = score;
+          }
+          bullets.splice(i, 1);
+          break;
+        }
+      }
+    }
+
+    // Update enemies
+    for (const e of enemies) {
+      if (!e.alive) continue;
+      const dx = player.x - e.x;
+      const dy = player.y - e.y;
+      const dist = Math.hypot(dx, dy);
+      e.x += (dx / dist) * e.speed;
+      e.y += (dy / dist) * e.speed;
+      if (dist < e.size + player.size) {
+        e.alive = false;
+        player.health--;
+        healthDisplay.textContent = player.health;
+        if (player.health <= 0) {
+          gameOver = true;
+          showMenu(`<div>Tu es mort à la vague ${wave} avec un score de ${score}</div><button onclick="location.reload()">Rejouer</button>`);
+        }
+      }
+    }
+
+    // Check if wave cleared
+    if (enemies.every(e => !e.alive)) {
+      wave++;
+      waveDisplay.textContent = wave;
+      pendingUpgrade = true;
+      info.style.display = 'none';
+      showUpgradeMenu();
+    }
+  }
+
+  function updateChats() {
+    // Loop backwards for safe removal
+    for (let i = chats.length - 1; i >= 0; i--) {
+      const chat = chats[i];
+      const dx = player.x - chat.x;
+      const dy = player.y - chat.y;
+      const dist = Math.hypot(dx, dy);
+      if (dist > 20) {
+        chat.x += (dx / dist) * chat.speed;
+        chat.y += (dy / dist) * chat.speed;
+      }
+      // Check collisions with enemies
+      for (const e of enemies) {
+        if (e.alive && Math.hypot(chat.x - e.x, chat.y - e.y) < chat.size + e.size) {
+          e.alive = false;
+          croixNoisette.push({ x: chat.x, y: chat.y });
+          chats.splice(i, 1);
+          score++;
+          scoreDisplay.textContent = score;
+          break;
+        }
+      }
+    }
+  }
+
+  // Dessin des éléments
+
+  function draw() {
+    drawBackground();
+
+    // Joueur (triangle)
+    ctx.fillStyle = '#4caf50';
+    ctx.beginPath();
+    ctx.moveTo(player.x + Math.cos(player.angle) * player.size, player.y + Math.sin(player.angle) * player.size);
+    ctx.lineTo(player.x + Math.cos(player.angle + 2.5) * player.size * 0.7, player.y + Math.sin(player.angle + 2.5) * player.size * 0.7);
+    ctx.lineTo(player.x + Math.cos(player.angle - 2.5) * player.size * 0.7, player.y + Math.sin(player.angle - 2.5) * player.size * 0.7);
+    ctx.closePath();
+    ctx.fill();
+
+    // Nom et vie
+    ctx.fillStyle = 'white';
+    ctx.font = '14px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(playerName, player.x, player.y - player.size - 30);
+    ctx.fillText(player.health + "❤", player.x, player.y - player.size - 15);
+
+    // Barre de recharge
+    if (player.isReloading) {
+      const elapsed = Date.now() - player.reloadStartTime;
+      const percent = Math.min(elapsed / player.reloadTime, 1);
+      ctx.fillStyle = 'black';
+      ctx.fillRect(player.x - 20, player.y + player.size + 10, 40, 6);
+      ctx.fillStyle = '#00ff00';
+      ctx.fillRect(player.x - 20, player.y + player.size + 10, 40 * percent, 6);
+    }
+
+    // Balles
+    bullets.forEach(b => {
+      ctx.fillStyle = '#ffff00';
+      ctx.beginPath();
+      ctx.arc(b.x, b.y, b.size, 0, Math.PI * 2);
+      ctx.fill();
+    });
+
+    // Chats dessinés en forme de chat stylisé
+    chats.forEach(chat => {
+      // Corps
+      ctx.fillStyle = '#ffaa33';
+      ctx.beginPath();
+      ctx.ellipse(chat.x, chat.y, chat.size * 1.2, chat.size, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Tête
+      ctx.fillStyle = '#ffaa33';
+      ctx.beginPath();
+      ctx.arc(chat.x, chat.y - chat.size * 1.2, chat.size * 0.8, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Oreilles
+      ctx.fillStyle = '#ff9933';
+      ctx.beginPath();
+      ctx.moveTo(chat.x - chat.size * 0.5, chat.y - chat.size * 1.7);
+      ctx.lineTo(chat.x - chat.size * 0.2, chat.y - chat.size * 1.5);
+      ctx.lineTo(chat.x - chat.size * 0.4, chat.y - chat.size * 1.3);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.moveTo(chat.x + chat.size * 0.5, chat.y - chat.size * 1.7);
+      ctx.lineTo(chat.x + chat.size * 0.2, chat.y - chat.size * 1.5);
+      ctx.lineTo(chat.x + chat.size * 0.4, chat.y - chat.size * 1.3);
+      ctx.closePath();
+      ctx.fill();
+
+      // Yeux
+      ctx.fillStyle = 'black';
+      ctx.beginPath();
+      ctx.ellipse(chat.x - chat.size * 0.25, chat.y - chat.size * 1.2, chat.size * 0.15, chat.size * 0.25, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.ellipse(chat.x + chat.size * 0.25, chat.y - chat.size * 1.2, chat.size * 0.15, chat.size * 0.25, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Petite bouche
+      ctx.beginPath();
+      ctx.moveTo(chat.x, chat.y - chat.size * 1.0);
+      ctx.lineTo(chat.x - chat.size * 0.15, chat.y - chat.size * 0.85);
+      ctx.lineTo(chat.x + chat.size * 0.15, chat.y - chat.size * 0.85);
+      ctx.closePath();
+      ctx.fillStyle = '#cc6600';
+      ctx.fill();
+
+      // Nom
+      ctx.fillStyle = 'white';
+      ctx.font = '12px monospace';
+      ctx.fillText("Noisette", chat.x, chat.y - chat.size - 10);
+    });
+
+    // Ennemis
+    enemies.forEach(e => {
+      if (!e.alive) return;
+
+      if (e.isBoss) {
+        const size = e.size;
+        ctx.save();
+        ctx.translate(e.x, e.y);
+        ctx.rotate(e.speed * 0.1);
+
+        ctx.fillStyle = '#ff00ff';
+        ctx.beginPath();
+        ctx.ellipse(0, 0, size * 0.7, size * 1.1, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = '#cc00cc';
+        ctx.beginPath();
+        ctx.arc(0, -size * 1.0, size * 0.5, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = '#ff88ff';
+        ctx.beginPath();
+        ctx.moveTo(0, -size * 1.3);
+        ctx.lineTo(size * 0.3, -size * 0.9);
+        ctx.lineTo(-size * 0.3, -size * 0.9);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.fillStyle = '#dd00dd';
+        ctx.beginPath();
+        ctx.ellipse(-size * 0.8, 0, size * 0.3, size * 0.8, Math.PI / 6, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.beginPath();
+        ctx.ellipse(size * 0.8, 0, size * 0.3, size * 0.8, -Math.PI / 6, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.restore();
+
+        ctx.fillStyle = 'white';
+        ctx.font = '14px monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText(e.name + " " + e.hp + "❤", e.x, e.y - e.size - 10);
+
+      } else {
+        if (e.name.startsWith("Libellule")) {
+          ctx.fillStyle = '#d32f2f';
+          ctx.beginPath();
+          ctx.ellipse(e.x, e.y, e.size * 0.5, e.size * 1.5, 0, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+          const wingLength = e.size * 1.8;
+          const wingWidth = e.size * 0.5;
+
+          ctx.beginPath();
+          ctx.ellipse(e.x - wingWidth, e.y - wingLength * 0.5, wingWidth, wingLength, Math.PI / 4, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.beginPath();
+          ctx.ellipse(e.x + wingWidth, e.y - wingLength * 0.5, wingWidth, wingLength, -Math.PI / 4, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.beginPath();
+          ctx.ellipse(e.x - wingWidth, e.y + wingLength * 0.5, wingWidth, wingLength, -Math.PI / 4, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.beginPath();
+          ctx.ellipse(e.x + wingWidth, e.y + wingLength * 0.5, wingWidth, wingLength, Math.PI / 4, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.fillStyle = '#b22222';
+          ctx.beginPath();
+          ctx.arc(e.x, e.y - e.size * 1.2, e.size * 0.6, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.fillStyle = 'black';
+          ctx.beginPath();
+          ctx.arc(e.x - e.size * 0.2, e.y - e.size * 1.3, e.size * 0.1, 0, Math.PI * 2);
+          ctx.arc(e.x + e.size * 0.2, e.y - e.size * 1.3, e.size * 0.1, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.fillStyle = 'white';
+          ctx.font = '14px monospace';
+          ctx.textAlign = 'center';
+          ctx.fillText(e.name + " " + e.hp + "❤", e.x, e.y - e.size - 10);
+
+        } else if (e.name.startsWith("Souris")) {
+          ctx.fillStyle = '#a0522d';
+          ctx.beginPath();
+          ctx.ellipse(e.x, e.y, e.size * 1.2, e.size * 0.8, 0, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.fillStyle = '#8b4513';
+          ctx.beginPath();
+          ctx.arc(e.x + e.size * 1.0, e.y - e.size * 0.2, e.size * 0.7, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.fillStyle = '#deb887';
+          ctx.beginPath();
+          ctx.arc(e.x + e.size * 1.4, e.y - e.size * 0.8, e.size * 0.3, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.beginPath();
+          ctx.arc(e.x + e.size * 0.7, e.y - e.size * 0.9, e.size * 0.25, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.fillStyle = 'black';
+          ctx.beginPath();
+          ctx.arc(e.x + e.size * 1.0, e.y - e.size * 0.3, e.size * 0.15, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.strokeStyle = '#8b4513';
+          ctx.lineWidth = 4;
+          ctx.beginPath();
+          ctx.moveTo(e.x - e.size * 1.2, e.y + e.size * 0.5);
+          ctx.quadraticCurveTo(e.x - e.size * 1.8, e.y + e.size * 1.5, e.x - e.size * 1.0, e.y + e.size * 2.0);
+          ctx.stroke();
+
+          ctx.fillStyle = 'white';
+          ctx.font = '14px monospace';
+          ctx.textAlign = 'center';
+          ctx.fillText(e.name + " " + e.hp + "❤", e.x, e.y - e.size - 10);
+        }
+      }
+    });
+
+    // Croix Noisette
+    croixNoisette.forEach(c => {
+  ctx.strokeStyle = 'black';
+  ctx.lineWidth = 5;
+  
+  const crossHeight = 50;
+  const crossWidth = 20;
+  const crossBarHeight = 15; // hauteur de la barre horizontale (position depuis le haut)
+  const barWidth = 30; // longueur de la barre horizontale
+  
+  // Tige verticale (plus longue)
+  ctx.beginPath();
+  ctx.moveTo(c.x, c.y - crossHeight / 2);
+  ctx.lineTo(c.x, c.y + crossHeight / 2);
+  ctx.stroke();
+  
+  // Barre horizontale (plus courte et centrée un peu en haut)
+  ctx.beginPath();
+  ctx.moveTo(c.x - barWidth / 2, c.y - crossHeight / 2 + crossBarHeight);
+  ctx.lineTo(c.x + barWidth / 2, c.y - crossHeight / 2 + crossBarHeight);
+  ctx.stroke();
+});
+  }
+
+  // Menu de sélection d'upgrade
+  function showUpgradeMenu() {
+    const menu = document.createElement('div');
+    menu.innerHTML = '<div>Choisis ton bonus :</div>';
+    const upgrades = [
+      { id: 'damage', label: '+ Dégâts' },
+      { id: 'firerate', label: '+ Vitesse des balles' },
+      { id: 'speed', label: '+ Vitesse de déplacement' },
+      { id: 'heart', label: '+1 vie' },
+      { id: 'reloadBoost', label: 'Recharge plus rapide' }
+    ];
+    const selected = upgrades.sort(() => 0.5 - Math.random()).slice(0, 2);
+    selected.forEach(upg => {
+      const btn = document.createElement('button');
+      btn.textContent = upg.label;
+      btn.onclick = () => chooseUpgrade(upg.id);
+      menu.appendChild(btn);
+    });
+    showMenu(menu);
+  }
+
+  function chooseUpgrade(type) {
+    if(type === 'damage') damageBonus++;
+    else if(type === 'firerate') bulletSpeed += 2;
+    else if(type === 'speed') player.speed += 0.3;
+    else if(type === 'heart') { player.health++; healthDisplay.textContent = player.health; }
+    else if(type === 'reloadBoost') player.reloadTime = Math.max(200, player.reloadTime * 0.75);
+    menus.style.display = 'none';
+    info.style.display = 'block';
+    pendingUpgrade = false;
+    spawnEnemies();
+  }
+
+  function spawnEnemies() {
+    enemies = [];
+    const isBossWave = wave % 5 === 0;
+    const safeDistance = 400;
+
+    function getRandomSafePos() {
+      let x, y, dist;
+      do {
+        x = Math.random() * width;
+        y = Math.random() * height;
+        dist = Math.hypot(player.x - x, player.y - y);
+      } while (dist < safeDistance);
+      return {x, y};
+    }
+
+    if (isBossWave) {
+      const pos = getRandomSafePos();
+      enemies.push({ x: pos.x, y: pos.y, size: 60, speed: 2 + wave * 0.05, alive: true, hp: 50 + wave * 3, isBoss: true, name: "Oiseau" });
+    }
+
+    const total = Math.floor(8 + wave * 1.5);
+    for (let i = 0; i < total; i++) {
+      const pos = getRandomSafePos();
+      enemies.push({ x: pos.x, y: pos.y, size: 18 + wave * 0.3, speed: 1.8 + Math.log(wave + 1) * 0.6, alive: true, hp: wave + Math.floor(wave / 2), isBoss: false, name: "Libellule" });
+    }
+
+    const pos = getRandomSafePos();
+    enemies.push({ x: pos.x, y: pos.y, size: 30 + Math.log(wave + 1) * 1.5, speed: 1.2 + (wave * 0.2), alive: true, hp: wave * 4, isBoss: false, name: "Souris Z-" + wave });
+  }
+
+  function loop() {
+    requestAnimationFrame(loop);
+    if (isPaused) return;
+    update();
+    updateChats();
+    draw();
+  }
+
+  // Init
+  resizeCanvas();
+
+  showMenu(`
+    <div>Entrez votre nom de guerrier galactique :</div>
+    <input type="text" id="playerNameInput" placeholder="MC Alex" />
+    <button onclick="playerName = document.getElementById('playerNameInput').value || 'MC Alex'; startGame()">Démarrer</button>
+  `);
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('service-worker.js')
+  .then(() => console.log('Service Worker enregistré !'))
+  .catch(err => console.error('Erreur enregistrement SW:', err));
+}
+
+</script>
+</body>
+</html>
