@@ -94,9 +94,8 @@
       margin-bottom: 10px;
     }
   </style>
-<link rel="manifest" href="manifest.json" />
-<meta name="theme-color" content="#4caf50" />
-
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#4caf50" />
 </head>
 <body>
   <div id="gameContainer">
@@ -146,6 +145,11 @@
   let mouseX, mouseY;
   let bulletSpeed = 10;
 
+  // Dash variables
+  const dashDistance = 120;  // distance du dash
+  let playerCanDash = true;
+  let chatCanDash = true;
+
   const player = { x: 0, y: 0, angle: 0, speed: 3, size: 20, ammo: 25, reloadTime: 1500, isReloading: false, health: 3, multiShot: false, bigBullets: false };
   const chats = [];
   let enemies = [], bullets = [], croixNoisette = [];
@@ -168,6 +172,10 @@
     keys[key] = true;
     if (key === 'r' && !player.isReloading && player.ammo < 25) reload();
     if (key === 'escape' && gameStarted && !gameOver && !pendingUpgrade) togglePause();
+
+    if (key === ' ' || key === 'space') {
+      tryDash();
+    }
   });
 
   window.addEventListener('keyup', e => keys[e.key.toLowerCase()] = false);
@@ -184,11 +192,9 @@
 
   // Gestion fond fixe
   function createBackground() {
-    // Fond herbe clair
     bgCtx.fillStyle = '#88cc55';
     bgCtx.fillRect(0, 0, width, height);
 
-    // Détails herbe
     for (let i = 0; i < 300; i++) {
       const x = Math.random() * width;
       const y = Math.random() * height;
@@ -199,7 +205,6 @@
       bgCtx.fill();
     }
 
-    // Fleurs stylisées
     const flowerColors = ['#ff6699', '#ffcc33', '#ff9966', '#ff66cc', '#cc3366'];
     for (let i = 0; i < 50; i++) {
       const x = Math.random() * width;
@@ -233,6 +238,49 @@
     ctx.drawImage(backgroundCanvas, 0, 0);
   }
 
+  // Fonction dash (déplacement instantané) selon direction de déplacement (ZQSD)
+  function tryDash() {
+    if (!gameStarted || gameOver || pendingUpgrade || isPaused) return;
+
+    // Calcul direction dash joueur à partir des touches directionnelles
+    let dirX = 0, dirY = 0;
+    if (keys['z']) dirY -= 1;
+    if (keys['s']) dirY += 1;
+    if (keys['q']) dirX -= 1;
+    if (keys['d']) dirX += 1;
+
+    const dist = Math.hypot(dirX, dirY);
+    if (dist === 0) return; // pas de déplacement, pas de dash
+
+    const normX = dirX / dist;
+    const normY = dirY / dist;
+
+    if (playerCanDash) {
+      player.x += normX * dashDistance;
+      player.y += normY * dashDistance;
+      clampPlayerPosition();
+      playerCanDash = false;
+    }
+
+    if (chatCanDash && chats.length > 0) {
+      const chat = chats[0];
+      chat.x += normX * dashDistance * 0.8;
+      chat.y += normY * dashDistance * 0.8;
+      clampChatPosition(chat);
+      chatCanDash = false;
+    }
+  }
+
+  function clampPlayerPosition() {
+    player.x = Math.max(player.size, Math.min(width - player.size, player.x));
+    player.y = Math.max(player.size, Math.min(height - player.size, player.y));
+  }
+
+  function clampChatPosition(chat) {
+    chat.x = Math.max(chat.size, Math.min(width - chat.size, chat.x));
+    chat.y = Math.max(chat.size, Math.min(height - chat.size, chat.y));
+  }
+
   // Fonctions de jeu
 
   function togglePause() {
@@ -248,8 +296,7 @@
   }
 
   function bordure() {
-    player.x = Math.max(player.size, Math.min(width - player.size, player.x));
-    player.y = Math.max(player.size, Math.min(height - player.size, player.y));
+    clampPlayerPosition();
   }
 
   function showMenu(content) {
@@ -276,6 +323,8 @@
     healthDisplay.textContent = player.health;
     waveDisplay.textContent = wave;
     scoreDisplay.textContent = score;
+    playerCanDash = true;
+    chatCanDash = true;
     menus.style.display = 'none';
     info.style.display = 'block';
     initGamePositions();
@@ -375,6 +424,10 @@
       pendingUpgrade = true;
       info.style.display = 'none';
       showUpgradeMenu();
+
+      // Réinitialiser le dash par vague
+      playerCanDash = true;
+      chatCanDash = true;
     }
   }
 
@@ -389,7 +442,7 @@
         chat.x += (dx / dist) * chat.speed;
         chat.y += (dy / dist) * chat.speed;
       }
-      // Check collisions with enemies
+      // Check collisions avec ennemis
       for (const e of enemies) {
         if (e.alive && Math.hypot(chat.x - e.x, chat.y - e.y) < chat.size + e.size) {
           e.alive = false;
@@ -404,7 +457,6 @@
   }
 
   // Dessin des éléments
-
   function draw() {
     drawBackground();
 
@@ -624,26 +676,24 @@
 
     // Croix Noisette
     croixNoisette.forEach(c => {
-  ctx.strokeStyle = 'black';
-  ctx.lineWidth = 5;
-  
-  const crossHeight = 50;
-  const crossWidth = 20;
-  const crossBarHeight = 15; // hauteur de la barre horizontale (position depuis le haut)
-  const barWidth = 30; // longueur de la barre horizontale
-  
-  // Tige verticale (plus longue)
-  ctx.beginPath();
-  ctx.moveTo(c.x, c.y - crossHeight / 2);
-  ctx.lineTo(c.x, c.y + crossHeight / 2);
-  ctx.stroke();
-  
-  // Barre horizontale (plus courte et centrée un peu en haut)
-  ctx.beginPath();
-  ctx.moveTo(c.x - barWidth / 2, c.y - crossHeight / 2 + crossBarHeight);
-  ctx.lineTo(c.x + barWidth / 2, c.y - crossHeight / 2 + crossBarHeight);
-  ctx.stroke();
-});
+      ctx.strokeStyle = 'black';
+      ctx.lineWidth = 5;
+
+      const crossHeight = 50;
+      const crossWidth = 20;
+      const crossBarHeight = 15;
+      const barWidth = 30;
+
+      ctx.beginPath();
+      ctx.moveTo(c.x, c.y - crossHeight / 2);
+      ctx.lineTo(c.x, c.y + crossHeight / 2);
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(c.x - barWidth / 2, c.y - crossHeight / 2 + crossBarHeight);
+      ctx.lineTo(c.x + barWidth / 2, c.y - crossHeight / 2 + crossBarHeight);
+      ctx.stroke();
+    });
   }
 
   // Menu de sélection d'upgrade
@@ -725,12 +775,11 @@
     <input type="text" id="playerNameInput" placeholder="MC Alex" />
     <button onclick="playerName = document.getElementById('playerNameInput').value || 'MC Alex'; startGame()">Démarrer</button>
   `);
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('service-worker.js')
-  .then(() => console.log('Service Worker enregistré !'))
-  .catch(err => console.error('Erreur enregistrement SW:', err));
-}
-
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('service-worker.js')
+    .then(() => console.log('Service Worker enregistré !'))
+    .catch(err => console.error('Erreur enregistrement SW:', err));
+  }
 </script>
 </body>
 </html>
