@@ -75,6 +75,7 @@
       background: #4caf50;
       color: white;
       cursor: pointer;
+      user-select: none;
     }
     button:hover {
       background: #388e3c;
@@ -157,6 +158,9 @@
   let dashUpgradeCount = 0;
   let speedUpgradeCount = 0;
 
+  // Difficulté globale qui augmente toutes les 5 vagues
+  let difficultyMultiplier = 1;
+
   const player = { 
     x: 0, y: 0, angle: 0, size: 20, 
     maxAmmo: 25, ammo: 25, reloadTime: 1500, isReloading: false, 
@@ -175,6 +179,198 @@
 
   const basePlayerSpeed = 3;
   const baseChatSpeed = 2;
+
+  // Son - gestion améliorée
+
+  // Volume global des sons - augmenté
+  const globalVolume = 0.12;
+
+  const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+  // Fonction pour s'assurer que l'audioContext est démarré (nécessaire pour que ça joue dans certains navigateurs)
+  async function ensureAudioContextStarted() {
+    if (audioCtx.state === 'suspended') {
+      await audioCtx.resume();
+    }
+  }
+
+  // Musique d'ambiance en boucle (simple notes répétitives)
+  let ambianceOscs = [];
+  function startBackgroundMusic() {
+    if (isPaused || gameOver || !gameStarted) return;
+    const now = audioCtx.currentTime;
+    const gainNode = audioCtx.createGain();
+    gainNode.gain.setValueAtTime(0.017, now); // ~0.05 / 3 du globalVolume 0.12
+    gainNode.connect(audioCtx.destination);
+
+    const notes = [261.63, 329.63, 392.00, 349.23]; // C4, E4, G4, F4
+    let delay = 0;
+
+    notes.forEach((freq, i) => {
+      const osc = audioCtx.createOscillator();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(freq, now + delay);
+      osc.connect(gainNode);
+      osc.start(now + delay);
+      osc.stop(now + delay + 0.5);
+      ambianceOscs.push(osc);
+      delay += 0.5;
+    });
+
+    setTimeout(() => {
+      ambianceOscs = [];
+      if (!gameOver && gameStarted && !isPaused) startBackgroundMusic();
+    }, notes.length * 500 + 100);
+  }
+
+  function playSound(freq, duration = 100, volume = 0.1, type = 'square') {
+    const oscillator = audioCtx.createOscillator();
+    const gainNode = audioCtx.createGain();
+
+    oscillator.connect(gainNode);
+    gainNode.connect(audioCtx.destination);
+
+    oscillator.type = type;
+    oscillator.frequency.setValueAtTime(freq, audioCtx.currentTime);
+    gainNode.gain.setValueAtTime(volume * globalVolume, audioCtx.currentTime);
+
+    oscillator.start();
+    oscillator.stop(audioCtx.currentTime + duration / 1000);
+  }
+
+  // Son clic bouton (court et aigu)
+  function playButtonClick() {
+    playSound(1000, 60, 0.07, 'square');
+  }
+
+  // Mélodie très courte et triste pour la mort de Noisette
+  function playNoisetteDeathShort() {
+    const now = audioCtx.currentTime;
+    const gainNode = audioCtx.createGain();
+    gainNode.connect(audioCtx.destination);
+    gainNode.gain.setValueAtTime(0.05 * globalVolume, now);
+
+    const notes = [220, 196, 174]; // A3, G3, F3, notes rapides descendantes
+    notes.forEach((freq, i) => {
+      const osc = audioCtx.createOscillator();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(freq, now + i * 0.12);
+      osc.connect(gainNode);
+      osc.start(now + i * 0.12);
+      osc.stop(now + i * 0.12 + 0.1);
+    });
+  }
+
+  // Son "cling" léger pour ennemi mort
+  function playCling() {
+    playSound(1200, 80, 0.07, 'triangle');
+  }
+
+  // Son mort ennemi avec hauteur et volume selon difficulté (hp max)
+  function playEnemyDeathSound(hpMax) {
+    let freq = 600 - Math.min(hpMax, 100) * 3;
+    freq = Math.max(300, freq);
+    let vol = 0.1 - Math.min(hpMax, 100) * 0.0008;
+    vol = Math.max(0.03, vol);
+    playSound(freq, 100, vol, 'triangle');
+  }
+
+  // Mélodie joyeuse de démarrage (quelques notes rapides)
+  function playStartMelody() {
+    const now = audioCtx.currentTime;
+    const gainNode = audioCtx.createGain();
+    gainNode.connect(audioCtx.destination);
+    gainNode.gain.setValueAtTime(0.05 * globalVolume, now);
+
+    const notes = [440, 554.37, 659.25, 880]; // A4, C#5, E5, A5
+    notes.forEach((freq, i) => {
+      const osc = audioCtx.createOscillator();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(freq, now + i * 0.15);
+      osc.connect(gainNode);
+      osc.start(now + i * 0.15);
+      osc.stop(now + i * 0.15 + 0.12);
+    });
+  }
+
+  // Mélodie triste de fin (lente et descendante)
+  function playEndMelody() {
+    const now = audioCtx.currentTime;
+    const gainNode = audioCtx.createGain();
+    gainNode.connect(audioCtx.destination);
+    gainNode.gain.setValueAtTime(0.04 * globalVolume, now);
+
+    const notes = [392, 349.23, 293.66, 261.63]; // G4, F4, D4, C4
+    notes.forEach((freq, i) => {
+      const osc = audioCtx.createOscillator();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, now + i * 0.6);
+      osc.connect(gainNode);
+      osc.start(now + i * 0.6);
+      osc.stop(now + i * 0.6 + 0.5);
+    });
+  }
+
+  // Nouvelle mélodie courte quand joueur perd un coeur
+  function playLoseHeartSound() {
+    const now = audioCtx.currentTime;
+    const gainNode = audioCtx.createGain();
+    gainNode.connect(audioCtx.destination);
+    gainNode.gain.setValueAtTime(0.04 * globalVolume, now);
+
+    const notes = [220, 196, 220]; // A3 G3 A3 rapides
+    notes.forEach((freq, i) => {
+      const osc = audioCtx.createOscillator();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(freq, now + i * 0.12);
+      osc.connect(gainNode);
+      osc.start(now + i * 0.12);
+      osc.stop(now + i * 0.12 + 0.1);
+    });
+  }
+
+  // Son vent léger pour dash
+  function playDashWind() {
+    const now = audioCtx.currentTime;
+    const gainNode = audioCtx.createGain();
+    gainNode.connect(audioCtx.destination);
+    gainNode.gain.setValueAtTime(0.02 * globalVolume, now);
+
+    const osc = audioCtx.createOscillator();
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(600, now);
+    osc.connect(gainNode);
+    osc.start(now);
+    osc.stop(now + 0.15);
+
+    gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+  }
+
+  // ----------------------------------
+  // Fonctions et logique du jeu
+
+  let animationFrameId = null;
+
+  function loop() {
+    animationFrameId = requestAnimationFrame(loop);
+    if (isPaused) return;
+    update();
+    updateChats();
+    draw();
+  }
+
+  function startLoop() {
+    if (!animationFrameId) {
+      animationFrameId = requestAnimationFrame(loop);
+    }
+  }
+
+  function stopLoop() {
+    if (animationFrameId) {
+      cancelAnimationFrame(animationFrameId);
+      animationFrameId = null;
+    }
+  }
 
   function updateSpeedAfterUpgrade() {
     const speedFactor = 1.5;
@@ -205,6 +401,8 @@
     noisetteDeathCount = 0;
     doubleMagCount = 0;
     dashUpgradeCount = 0;
+
+    difficultyMultiplier = 1;
 
     chats.push({ x: player.x - 50, y: player.y - 50, size: 15, speed: baseChatSpeed, health: noisetteBaseHealth, maxHealth: noisetteBaseHealth });
   }
@@ -284,6 +482,7 @@
     player.y += normY * dashDistance;
     clampPlayerPosition();
     playerCanDash--;
+    playDashWind(); // Son vent dash
     if (chatCanDash && chats.length > 0) {
       const chat = chats[0];
       chat.x += normX * dashDistance * 0.8;
@@ -335,14 +534,26 @@
   }
 
   function togglePause() {
-    isPaused = !isPaused;
-    if (isPaused) {
-      showMenu('<div>Jeu en pause</div><button onclick="togglePause()">Reprendre</button>');
+    playButtonClick();
+    if (!isPaused) {
+      isPaused = true;
+      stopLoop();
+      showMenu('<div>Jeu en pause</div><button id="resumeBtn">Reprendre</button>');
       info.style.display = 'none';
+      setTimeout(() => {
+        const resumeBtn = document.getElementById('resumeBtn');
+        if (resumeBtn) {
+          resumeBtn.onclick = () => {
+            playButtonClick();
+            togglePause();
+          };
+        }
+      }, 0);
     } else {
+      isPaused = false;
       menus.style.display = 'none';
       info.style.display = 'block';
-      loop();
+      startLoop();
     }
   }
 
@@ -355,9 +566,24 @@
     menus.style.display = 'flex';
     if (typeof content === 'string') menus.innerHTML = content;
     else menus.appendChild(content);
+
+    // Ajout automatique son clic sur tous les boutons (dynamiques inclus)
+    const buttons = menus.querySelectorAll('button');
+    buttons.forEach(btn => {
+      btn.onclick = (e) => {
+        playButtonClick();
+        if (btn.dataset.upgradeId) {
+          chooseUpgrade(btn.dataset.upgradeId);
+          e.stopPropagation();
+        }
+      };
+    });
   }
 
-  function startGame() {
+  async function startGame() {
+    await ensureAudioContextStarted(); // reprise audioContext si suspendu
+    playStartMelody(); // mélodie joyeuse démarrage
+    startBackgroundMusic(); // lance musique d'ambiance en boucle
     gameStarted = true;
     gameOver = false;
     pendingUpgrade = false;
@@ -365,6 +591,7 @@
     damageBonus = 0;
     wave = 1;
     score = 0;
+    difficultyMultiplier = 1;
     player.health = 3;
     player.maxAmmo = 25;
     player.ammo = player.maxAmmo;
@@ -388,7 +615,7 @@
     menus.style.display = 'none';
     initGamePositions();
     spawnEnemies();
-    loop();
+    startLoop();
   }
 
   function reload() {
@@ -430,6 +657,10 @@
     const isBossWave = wave % 5 === 0;
     const safeDistance = 400;
 
+    if (isBossWave) {
+      difficultyMultiplier *= 1.3;
+    }
+
     function getRandomSafePos() {
       let x, y, dist;
       do {
@@ -441,46 +672,54 @@
     }
 
     function randomSpeed(base) {
-      return base * (1.0 + Math.random() * 0.3);
+      return base * (0.9 + Math.random() * 0.2) * difficultyMultiplier;
     }
 
     if (isBossWave) {
       const pos = getRandomSafePos();
-      let baseSpeed = 2 + wave * 0.15;
+      let baseSpeed = (2 + wave * 0.05) * difficultyMultiplier;
       let angle = Math.random() * Math.PI * 2;
       enemies.push({ 
         x: pos.x, y: pos.y, size: 60, speed: baseSpeed, 
-        alive: true, hp: 50 + wave * 3, isBoss: true, name: "Oiseau",
+        alive: true, hp: Math.floor((50 + wave * 5) * difficultyMultiplier), 
+        isBoss: true, name: "Oiseau",
         velocityX: Math.cos(angle) * randomSpeed(baseSpeed),
         velocityY: Math.sin(angle) * randomSpeed(baseSpeed)
       });
     }
 
-    const total = Math.floor(8 + wave * 1.5);
-    for (let i = 0; i < total; i++) {
+    const libelluleCount = Math.floor(3 + wave * 1.2 * difficultyMultiplier);
+    for (let i = 0; i < libelluleCount; i++) {
       const pos = getRandomSafePos();
-      let baseSpeed = 1.8 + Math.log(wave + 1) * 0.9;
+      let baseSpeed = (1.8 + Math.log(wave + 1) * 0.6) * difficultyMultiplier;
       let angle = Math.random() * Math.PI * 2;
       enemies.push({ 
         x: pos.x, y: pos.y, size: 18 + wave * 0.3, speed: baseSpeed,
-        alive: true, hp: wave + Math.floor(wave / 2), isBoss: false, name: "Libellule",
+        alive: true, hp: Math.floor((3 + wave * 1.5) * difficultyMultiplier), 
+        isBoss: false, name: "Libellule",
         velocityX: Math.cos(angle) * randomSpeed(baseSpeed),
         velocityY: Math.sin(angle) * randomSpeed(baseSpeed)
       });
     }
 
-    const pos = getRandomSafePos();
-    let baseSpeed = 1.2 + (wave * 0.2);
-    let angle = Math.random() * Math.PI * 2;
-    enemies.push({ 
-      x: pos.x, y: pos.y, size: 30 + Math.log(wave + 1) * 1.5, speed: baseSpeed,
-      alive: true, hp: wave * 4, isBoss: false, name: "Souris Z-" + wave,
-      velocityX: Math.cos(angle) * randomSpeed(baseSpeed),
-      velocityY: Math.sin(angle) * randomSpeed(baseSpeed)
-    });
+    const sourisCount = Math.floor(1 + wave * 0.7 * difficultyMultiplier);
+    for (let i = 0; i < sourisCount; i++) {
+      const pos = getRandomSafePos();
+      let baseSpeed = (1.2 + (wave * 0.2)) * difficultyMultiplier;
+      let angle = Math.random() * Math.PI * 2;
+      enemies.push({ 
+        x: pos.x, y: pos.y, size: 30 + Math.log(wave + 1) * 1.5, speed: baseSpeed,
+        alive: true, hp: Math.floor((5 + wave * 2) * difficultyMultiplier), 
+        isBoss: false, name: "Souris Z-" + wave,
+        velocityX: Math.cos(angle) * randomSpeed(baseSpeed),
+        velocityY: Math.sin(angle) * randomSpeed(baseSpeed)
+      });
+    }
   }
 
   function showStats() {
+    playEndMelody(); // mélodie triste fin de partie
+
     const totalBulletsFired = bulletsFired;
     const multiShotUpgrades = player.multiShotCount - 1;
     const noisetteTotalHP = chats.reduce((sum, c) => sum + c.health, 0);
@@ -519,9 +758,62 @@
         ${rowsHTML}
       </tbody>
     </table>
-    <button onclick="location.reload()" style="margin-top: 15px;">Rejouer</button>
+    <button id="replayBtn">Rejouer</button>
+    <button id="shareBtn">Partager mon score</button>
     `;
     showMenu(statsHTML);
+
+    setTimeout(() => {
+      const replayBtn = document.getElementById('replayBtn');
+      if (replayBtn) {
+        replayBtn.onclick = () => {
+          playButtonClick();
+          location.reload();
+        };
+      }
+      const shareBtn = document.getElementById('shareBtn');
+      if (shareBtn) {
+        shareBtn.onclick = () => {
+          playButtonClick();
+          shareScore();
+        };
+      }
+    }, 0);
+  }
+
+  function shareScore() {
+    const totalBulletsFired = bulletsFired;
+    const noisetteTotalHP = chats.reduce((sum, c) => sum + c.health, 0);
+
+    const statsData = [
+      ['Vague atteinte', wave, 'Score (ennemis tués)', score],
+      ['Munitions max', player.maxAmmo, 'Munitions restantes', player.ammo],
+      ['Total balles tirées', totalBulletsFired, 'Dégâts bonus', damageBonus],
+      ['Points de vitesse pris', speedUpgradeCount, 'Vitesse joueur finale', player.speed.toFixed(2)],
+      ['Vitesse balles finale', bulletSpeed, 'Temps recharge final (ms)', player.reloadTime],
+      ['Vie joueur finale', player.health, 'Vie totale Noisette', noisetteTotalHP],
+      ['Morts de Noisette', noisetteDeathCount, 'Balles perforantes', player.piercingCount],
+      ['Nombre balles par tir (multiShot)', player.multiShotCount, 'Améliorations double chargeur', doubleMagCount],
+      ['Améliorations dash', dashUpgradeCount, '', '']
+    ];
+
+    let textStats = `Banlieue Galactique - Score de ${playerName}\n`;
+    textStats += `Tu es mort à la vague ${wave} avec un score de ${score}\n\n`;
+    textStats += `Statistiques détaillées :\n`;
+
+    statsData.forEach(row => {
+      textStats += `${row[0]} : ${row[1]}    |    ${row[2]} : ${row[3]}\n`;
+    });
+
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(textStats).then(() => {
+        alert("Score et stats copiés dans le presse-papier !");
+      }, () => {
+        alert("Impossible de copier automatiquement. Voici le texte :\n" + textStats);
+      });
+    } else {
+      prompt("Copiez ce texte pour partager :", textStats);
+    }
   }
 
   function update() {
@@ -547,12 +839,14 @@
           e.hp -= 1 + damageBonus;
           if (e.hp <= 0) {
             e.alive = false;
+            playCling(); // son cling léger
+            playEnemyDeathSound(e.hp + damageBonus + 1); // son selon difficulté
             if (e.isBoss) {
               const reward = Math.random() < 0.5 ? 'multiShot' : 'bigBullets';
               if (reward === 'multiShot') player.multiShotCount++;
               else if (reward === 'bigBullets') {
                 player.bigBullets = true;
-                if (doubleMagCount === 0) doubleMagCount++; // compte 1ere double mag
+                if (doubleMagCount === 0) doubleMagCount++;
                 player.piercingCount = Math.max(player.piercingCount, 2);
                 player.piercingCount++;
               }
@@ -579,20 +873,17 @@
       const dist = Math.hypot(dx, dy);
       if(dist === 0) return;
 
-      // Générer un petit décalage aléatoire temporel
-      if (!e.noiseOffset) e.noiseOffset = Math.random() * 1000; // initial random seed
-      e.noiseOffset += 0.05; // vitesse de changement
+      if (!e.noiseOffset) e.noiseOffset = Math.random() * 1000;
+      e.noiseOffset += 0.05;
 
-      const noiseAmplitude = 0.5; // intensité du zigzag
+      const noiseAmplitude = 0.5;
       const angleNoise = Math.sin(e.noiseOffset) * noiseAmplitude;
 
-      // Calculer angle vers joueur + bruit
       let angleToPlayer = Math.atan2(dy, dx);
       let noisyAngle = angleToPlayer + angleNoise;
 
-      // Calculer vitesse cible avec angle bruité
       const baseSpeed = e.speed;
-      const randomSpeedFactor = 0.85 + Math.random() * 0.3; // vitesse variable
+      const randomSpeedFactor = 0.85 + Math.random() * 0.3;
       const finalSpeed = baseSpeed * randomSpeedFactor;
 
       const desiredVX = Math.cos(noisyAngle) * finalSpeed;
@@ -608,6 +899,7 @@
       if (Math.hypot(player.x - e.x, player.y - e.y) < e.size + player.size) {
         e.alive = false;
         player.health--;
+        playLoseHeartSound(); // son quand perd un coeur
         if (player.health <= 0) {
           gameOver = true;
           showStats();
@@ -619,10 +911,11 @@
       wave++;
       pendingUpgrade = true;
       info.style.display = 'none';
-      showUpgradeMenu();
 
       playerCanDash = playerDashMax;
       chatCanDash = true;
+
+      showUpgradeMenu();
     }
   }
 
@@ -642,6 +935,7 @@
           croixNoisette.push({ x: chat.x, y: chat.y });
           chats.splice(i, 1);
           noisetteDeathCount++;
+          playNoisetteDeathShort();
 
           if (hasReviveNoisetteBonus && noisetteCanRespawn) {
             noisetteSpeed *= 2;
@@ -937,7 +1231,11 @@ Nombre de balles tirées : ${player.multiShotCount}`;
     selected.forEach(upg => {
       const btn = document.createElement('button');
       btn.textContent = upg.label;
-      btn.onclick = () => chooseUpgrade(upg.id);
+      btn.dataset.upgradeId = upg.id;
+      btn.onclick = () => {
+        playButtonClick();
+        chooseUpgrade(upg.id);
+      };
       menu.appendChild(btn);
     });
     showMenu(menu);
@@ -979,21 +1277,22 @@ Nombre de balles tirées : ${player.multiShotCount}`;
     spawnEnemies();
   }
 
-  function loop() {
-    requestAnimationFrame(loop);
-    if (isPaused) return;
-    update();
-    updateChats();
-    draw();
-  }
-
   resizeCanvas();
 
   showMenu(`
     <div>Entrez votre nom de guerrier galactique :</div>
     <input type="text" id="playerNameInput" placeholder="MC Alex" />
-    <button onclick="playerName = document.getElementById('playerNameInput').value || 'MC Alex'; startGame()">Démarrer</button>
+    <button id="startBtn">Démarrer</button>
   `);
+
+  // Événement bouton démarrer (unique, propre)
+  document.getElementById('startBtn').onclick = async () => {
+    playButtonClick();
+    await ensureAudioContextStarted();
+    const inputName = document.getElementById('playerNameInput');
+    playerName = inputName.value.trim() || 'MC Alex';
+    startGame();
+  };
 
 </script>
 </body>
