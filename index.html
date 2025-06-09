@@ -6,17 +6,17 @@
   <title>Banlieue Galactique</title>
   <style>
     html, body {
-      margin: 0;
-      padding: 0;
+      margin: 0; padding: 0;
       overflow: hidden;
       background: #000014;
       font-family: monospace;
       height: 100vh;
       width: 100vw;
       -webkit-user-select: none;
-         -moz-user-select: none;
-          -ms-user-select: none;
-              user-select: none;
+      -moz-user-select: none;
+      -ms-user-select: none;
+      user-select: none;
+      touch-action: manipulation;
     }
 
     #gameContainer {
@@ -46,6 +46,8 @@
       background: rgba(0,0,0,0.5);
       padding: 10px;
       border-radius: 8px;
+      user-select: none;
+      touch-action: manipulation;
     }
 
     #info {
@@ -64,10 +66,7 @@
 
     #menus {
       position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
+      top: 0; left: 0; right: 0; bottom: 0;
       background: rgba(0,0,0,0.85);
       display: none;
       flex-direction: column;
@@ -76,7 +75,9 @@
       z-index: 1000;
       color: white;
       font-size: 20px;
-      touch-action: none;
+      user-select: none;
+      touch-action: manipulation;
+      padding: 20px;
     }
 
     button {
@@ -88,10 +89,9 @@
       color: white;
       cursor: pointer;
       user-select: none;
-      -webkit-user-select: none;
       touch-action: manipulation;
+      font-size: 18px;
     }
-
     button:hover {
       background: #388e3c;
     }
@@ -102,21 +102,23 @@
       border-radius: 8px;
       border: none;
       margin-bottom: 10px;
+      width: 220px;
+      text-align: center;
+      user-select: none;
+      touch-action: manipulation;
     }
 
-    /* Touch controls styles */
+    /* Touch controls */
     #touchControls {
       position: fixed;
       bottom: 10px;
-      left: 0;
-      right: 0;
+      left: 0; right: 0;
       height: 180px;
       display: flex;
       justify-content: space-between;
       padding: 0 20px;
       z-index: 2000;
       user-select: none;
-      -webkit-user-select: none;
       touch-action: none;
     }
 
@@ -127,6 +129,7 @@
       background: rgba(100, 100, 100, 0.3);
       border-radius: 50%;
       touch-action: none;
+      user-select: none;
     }
 
     #joystickKnob {
@@ -139,33 +142,33 @@
       border-radius: 50%;
       transform: translate(-50%, -50%);
       touch-action: none;
+      user-select: none;
     }
 
     #buttonsPad {
       position: relative;
       width: 130px;
       height: 130px;
-      /* On met en pyramide */
       touch-action: none;
+      user-select: none;
     }
 
-    /* Pyramid layout for movement buttons */
+    /* Pyramide des flèches */
     #btnUp {
       position: absolute;
       top: 0;
       left: 35px;
       width: 60px;
       height: 60px;
-      border-radius: 20px;
       background: #4caf50cc;
+      border-radius: 20px;
       color: white;
       font-weight: bold;
-      font-size: 24px;
-      text-align: center;
+      font-size: 26px;
       line-height: 60px;
+      text-align: center;
+      touch-action: manipulation;
       user-select: none;
-      -webkit-user-select: none;
-      touch-action: none;
     }
 
     #btnLeft {
@@ -174,16 +177,15 @@
       left: 0;
       width: 60px;
       height: 60px;
-      border-radius: 20px;
       background: #4caf50cc;
+      border-radius: 20px;
       color: white;
       font-weight: bold;
-      font-size: 24px;
-      text-align: center;
+      font-size: 26px;
       line-height: 60px;
+      text-align: center;
+      touch-action: manipulation;
       user-select: none;
-      -webkit-user-select: none;
-      touch-action: none;
     }
 
     #btnDown {
@@ -192,16 +194,15 @@
       left: 35px;
       width: 60px;
       height: 60px;
-      border-radius: 20px;
       background: #4caf50cc;
+      border-radius: 20px;
       color: white;
       font-weight: bold;
-      font-size: 24px;
-      text-align: center;
+      font-size: 26px;
       line-height: 60px;
+      text-align: center;
+      touch-action: manipulation;
       user-select: none;
-      -webkit-user-select: none;
-      touch-action: none;
     }
 
     #btnRight {
@@ -210,19 +211,17 @@
       right: 0;
       width: 60px;
       height: 60px;
-      border-radius: 20px;
       background: #4caf50cc;
+      border-radius: 20px;
       color: white;
       font-weight: bold;
-      font-size: 24px;
-      text-align: center;
+      font-size: 26px;
       line-height: 60px;
+      text-align: center;
+      touch-action: manipulation;
       user-select: none;
-      -webkit-user-select: none;
-      touch-action: none;
     }
 
-    /* Reload and pause buttons below */
     #btnReload, #btnPause {
       width: 130px;
       height: 50px;
@@ -232,22 +231,18 @@
       color: white;
       font-weight: bold;
       font-size: 18px;
-      text-align: center;
       line-height: 50px;
-      user-select: none;
-      -webkit-user-select: none;
+      text-align: center;
       touch-action: manipulation;
+      user-select: none;
       cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
     }
 
     #btnReload:active, #btnPause:active {
       background: #388e3c;
     }
-
   </style>
-<link rel="manifest" href="manifest.json" />
-<meta name="theme-color" content="#4caf50" />
-
 </head>
 <body>
   <div id="gameContainer">
@@ -302,26 +297,17 @@
 
     resizeCanvas();
 
-    // Recentrage joueur et souris
     player.x = width / 2;
     player.y = height / 2;
     mouseX = width / 2;
     mouseY = height / 2;
 
-    // Recentrage chats
-    chats.forEach(function(c) {
-      c.x = player.x - 50;
-      c.y = player.y - 50;
-    });
+    chats.forEach(c => { c.x = player.x - 50; c.y = player.y - 50; });
 
-    // Relance la boucle si pas en pause ou game over
-    if (!isPaused && !gameOver) {
-      if (!animationFrameId) {
-        loop();
-      }
+    if (!isPaused && !gameOver && !animationFrameId) {
+      loop();
     }
   }
-
   document.addEventListener('fullscreenchange', onFullScreenChange);
   document.addEventListener('webkitfullscreenchange', onFullScreenChange);
   document.addEventListener('msfullscreenchange', onFullScreenChange);
@@ -329,7 +315,6 @@
   let width, height;
   let animationFrameId = null;
 
-  // Offscreen canvas pour fond fixe
   const backgroundCanvas = document.createElement('canvas');
   const bgCtx = backgroundCanvas.getContext('2d');
 
@@ -338,10 +323,8 @@
     canvas.height = container.clientHeight;
     width = canvas.width;
     height = canvas.height;
-
     backgroundCanvas.width = width;
     backgroundCanvas.height = height;
-
     createBackground();
   }
   window.addEventListener('resize', resizeCanvas);
@@ -375,127 +358,7 @@
     chats.push({ x: player.x - 50, y: player.y - 50, size: 15, speed: 2 });
   }
 
-  window.addEventListener('keydown', function(e) {
-    const key = e.key.toLowerCase();
-    keys[key] = true;
-    if (key === 'r' && !player.isReloading && player.ammo < 25) reload();
-    if (key === 'escape' && gameStarted && !gameOver && !pendingUpgrade) togglePause();
-  });
-
-  window.addEventListener('keyup', function(e) {
-    keys[e.key.toLowerCase()] = false;
-  });
-
-  window.addEventListener('mousedown', function() {
-    if (!isPaused) shoot();
-  });
-
-  // Garde une variable pour savoir si joystick tactile est actif
-  let joystickActive = false;
-
-  window.addEventListener('mousemove', function(e) {
-    // Ignore souris si joystick tactile actif
-    if (joystickActive) return;
-    const rect = container.getBoundingClientRect();
-    mouseX = e.clientX - rect.left;
-    mouseY = e.clientY - rect.top;
-    var dx = mouseX - player.x, dy = mouseY - player.y;
-    player.angle = Math.atan2(dy, dx);
-  });
-
-  // Fond fixe
-  function createBackground() {
-    bgCtx.fillStyle = '#88cc55';
-    bgCtx.fillRect(0, 0, width, height);
-
-    for (let i = 0; i < 300; i++) {
-      const x = Math.random() * width;
-      const y = Math.random() * height;
-      const size = Math.random() * 2 + 1;
-      bgCtx.fillStyle = 'rgba(34, 85, 12, ' + (Math.random() * 0.5 + 0.3) + ')';
-      bgCtx.beginPath();
-      bgCtx.ellipse(x, y, size * 0.5, size, 0, 0, Math.PI * 2);
-      bgCtx.fill();
-    }
-
-    const flowerColors = ['#ff6699', '#ffcc33', '#ff9966', '#ff66cc', '#cc3366'];
-    for (let i = 0; i < 50; i++) {
-      const x = Math.random() * width;
-      const y = Math.random() * height;
-      const petalSize = 5;
-      const centerColor = flowerColors[Math.floor(Math.random() * flowerColors.length)];
-
-      for (let angle = 0; angle < 2 * Math.PI; angle += Math.PI / 2) {
-        bgCtx.fillStyle = 'white';
-        bgCtx.beginPath();
-        bgCtx.ellipse(
-          x + Math.cos(angle) * petalSize,
-          y + Math.sin(angle) * petalSize,
-          petalSize * 0.6,
-          petalSize * 0.9,
-          angle,
-          0,
-          Math.PI * 2
-        );
-        bgCtx.fill();
-      }
-
-      bgCtx.fillStyle = centerColor;
-      bgCtx.beginPath();
-      bgCtx.arc(x, y, petalSize * 0.8, 0, Math.PI * 2);
-      bgCtx.fill();
-    }
-  }
-
-  function drawBackground() {
-    ctx.drawImage(backgroundCanvas, 0, 0);
-  }
-
-  function togglePause() {
-    isPaused = !isPaused;
-    if (isPaused) {
-      if (animationFrameId !== null) {
-        cancelAnimationFrame(animationFrameId);
-        animationFrameId = null;
-      }
-
-      showMenu(
-        '<div>Jeu en pause</div>' +
-        '<button id="resumeBtn">Reprendre</button>' +
-        '<button id="fullscreenBtn">Plein écran</button>'
-      );
-      info.style.display = 'none';
-
-      document.getElementById('resumeBtn').onclick = togglePause;
-      document.getElementById('fullscreenBtn').onclick = function() {
-        if (container.requestFullscreen) {
-          container.requestFullscreen();
-        } else if (container.webkitRequestFullscreen) {
-          container.webkitRequestFullscreen();
-        } else if (container.msRequestFullscreen) {
-          container.msRequestFullscreen();
-        }
-      };
-
-    } else {
-      menus.style.display = 'none';
-      info.style.display = 'block';
-      loop();
-    }
-  }
-
-  function bordure() {
-    player.x = Math.max(player.size, Math.min(width - player.size, player.x));
-    player.y = Math.max(player.size, Math.min(height - player.size, player.y));
-  }
-
-  function showMenu(content) {
-    menus.innerHTML = '';
-    menus.style.display = 'flex';
-    if (typeof content === 'string') menus.innerHTML = content;
-    else menus.appendChild(content);
-  }
-
+  // Menu démarrage tactile + PC
   function startGame() {
     gameStarted = true;
     gameOver = false;
@@ -520,10 +383,105 @@
     loop();
   }
 
+  window.addEventListener('keydown', e => {
+    const key = e.key.toLowerCase();
+    keys[key] = true;
+    if (key === 'r' && !player.isReloading && player.ammo < 25) reload();
+    if (key === 'escape' && gameStarted && !gameOver && !pendingUpgrade) togglePause();
+  });
+  window.addEventListener('keyup', e => { keys[e.key.toLowerCase()] = false; });
+
+  window.addEventListener('mousedown', () => { if (!isPaused) shoot(); });
+
+  // Visée souris / tactile
+  let joystickActive = false;
+  window.addEventListener('mousemove', e => {
+    if (joystickActive) return;
+    const rect = container.getBoundingClientRect();
+    mouseX = e.clientX - rect.left;
+    mouseY = e.clientY - rect.top;
+    player.angle = Math.atan2(mouseY - player.y, mouseX - player.x);
+  });
+
+  // Background fixe
+  function createBackground() {
+    bgCtx.fillStyle = '#88cc55';
+    bgCtx.fillRect(0, 0, width, height);
+    for (let i = 0; i < 300; i++) {
+      const x = Math.random() * width;
+      const y = Math.random() * height;
+      const size = Math.random() * 2 + 1;
+      bgCtx.fillStyle = 'rgba(34, 85, 12, ' + (Math.random() * 0.5 + 0.3) + ')';
+      bgCtx.beginPath();
+      bgCtx.ellipse(x, y, size * 0.5, size, 0, 0, Math.PI * 2);
+      bgCtx.fill();
+    }
+    const flowerColors = ['#ff6699', '#ffcc33', '#ff9966', '#ff66cc', '#cc3366'];
+    for (let i = 0; i < 50; i++) {
+      const x = Math.random() * width;
+      const y = Math.random() * height;
+      const petalSize = 5;
+      const centerColor = flowerColors[Math.floor(Math.random() * flowerColors.length)];
+      for (let angle = 0; angle < 2 * Math.PI; angle += Math.PI / 2) {
+        bgCtx.fillStyle = 'white';
+        bgCtx.beginPath();
+        bgCtx.ellipse(x + Math.cos(angle) * petalSize, y + Math.sin(angle) * petalSize, petalSize * 0.6, petalSize * 0.9, angle, 0, Math.PI * 2);
+        bgCtx.fill();
+      }
+      bgCtx.fillStyle = centerColor;
+      bgCtx.beginPath();
+      bgCtx.arc(x, y, petalSize * 0.8, 0, Math.PI * 2);
+      bgCtx.fill();
+    }
+  }
+
+  function drawBackground() {
+    ctx.drawImage(backgroundCanvas, 0, 0);
+  }
+
+  function togglePause() {
+    isPaused = !isPaused;
+    if (isPaused) {
+      if (animationFrameId !== null) {
+        cancelAnimationFrame(animationFrameId);
+        animationFrameId = null;
+      }
+      showMenu(
+        '<div>Jeu en pause</div>' +
+        '<button id="resumeBtn">Reprendre</button>' +
+        '<button id="fullscreenBtn">Plein écran</button>'
+      );
+      info.style.display = 'none';
+
+      document.getElementById('resumeBtn').onclick = togglePause;
+      document.getElementById('fullscreenBtn').onclick = function() {
+        if (container.requestFullscreen) container.requestFullscreen();
+        else if (container.webkitRequestFullscreen) container.webkitRequestFullscreen();
+        else if (container.msRequestFullscreen) container.msRequestFullscreen();
+      };
+    } else {
+      menus.style.display = 'none';
+      info.style.display = 'block';
+      loop();
+    }
+  }
+
+  function bordure() {
+    player.x = Math.max(player.size, Math.min(width - player.size, player.x));
+    player.y = Math.max(player.size, Math.min(height - player.size, player.y));
+  }
+
+  function showMenu(content) {
+    menus.innerHTML = '';
+    menus.style.display = 'flex';
+    if (typeof content === 'string') menus.innerHTML = content;
+    else menus.appendChild(content);
+  }
+
   function reload() {
     player.isReloading = true;
     player.reloadStartTime = Date.now();
-    setTimeout(function() {
+    setTimeout(() => {
       player.ammo = 25;
       ammoDisplay.textContent = player.ammo;
       player.isReloading = false;
@@ -534,12 +492,12 @@
     if (!gameStarted || player.isReloading || gameOver || pendingUpgrade || isPaused) return;
     if (player.ammo <= 0) {
       reloadMessage.style.display = 'block';
-      setTimeout(function() { reloadMessage.style.display = 'none'; }, 1500);
+      setTimeout(() => { reloadMessage.style.display = 'none'; }, 1500);
       return;
     }
     player.ammo--;
     ammoDisplay.textContent = player.ammo;
-    var bulletSize = player.bigBullets ? 10 : 5;
+    const bulletSize = player.bigBullets ? 10 : 5;
     if (player.multiShot) {
       bullets.push({ x: player.x, y: player.y, angle: player.angle + 0.1, size: bulletSize });
       bullets.push({ x: player.x, y: player.y, angle: player.angle - 0.1, size: bulletSize });
@@ -551,7 +509,6 @@
   function update() {
     if (!gameStarted || gameOver || pendingUpgrade) return;
 
-    // Déplacement avec touches clavier ou virtuelles
     if (keys['z']) player.y -= player.speed;
     if (keys['s']) player.y += player.speed;
     if (keys['q']) player.x -= player.speed;
@@ -559,19 +516,19 @@
 
     bordure();
 
-    for (var i = bullets.length - 1; i >= 0; i--) {
-      var b = bullets[i];
+    for (let i = bullets.length - 1; i >= 0; i--) {
+      const b = bullets[i];
       b.x += Math.cos(b.angle) * bulletSpeed;
       b.y += Math.sin(b.angle) * bulletSpeed;
 
-      for (var j = 0; j < enemies.length; j++) {
-        var e = enemies[j];
+      for (let j = 0; j < enemies.length; j++) {
+        const e = enemies[j];
         if (e.alive && Math.hypot(b.x - e.x, b.y - e.y) < e.size + b.size) {
           e.hp -= 1 + damageBonus;
           if (e.hp <= 0) {
             e.alive = false;
             if (e.isBoss) {
-              var reward = Math.random() < 0.5 ? 'multiShot' : 'bigBullets';
+              const reward = Math.random() < 0.5 ? 'multiShot' : 'bigBullets';
               if (reward === 'multiShot') player.multiShot = true;
               else if (reward === 'bigBullets') player.bigBullets = true;
             }
@@ -584,12 +541,12 @@
       }
     }
 
-    for (var k = 0; k < enemies.length; k++) {
-      var enemy = enemies[k];
+    for (let k = 0; k < enemies.length; k++) {
+      const enemy = enemies[k];
       if (!enemy.alive) continue;
-      var dxE = player.x - enemy.x;
-      var dyE = player.y - enemy.y;
-      var dist = Math.hypot(dxE, dyE);
+      const dxE = player.x - enemy.x;
+      const dyE = player.y - enemy.y;
+      const dist = Math.hypot(dxE, dyE);
       enemy.x += (dxE / dist) * enemy.speed;
       enemy.y += (dyE / dist) * enemy.speed;
       if (dist < enemy.size + player.size) {
@@ -598,12 +555,12 @@
         healthDisplay.textContent = player.health;
         if (player.health <= 0) {
           gameOver = true;
-          showMenu('<div>Tu es mort à la vague ' + wave + ' avec un score de ' + score + '</div><button onclick="location.reload()">Rejouer</button>');
+          showMenu(`<div>Tu es mort à la vague ${wave} avec un score de ${score}</div><button onclick="location.reload()">Rejouer</button>`);
         }
       }
     }
 
-    if (enemies.every(function(e) { return !e.alive; })) {
+    if (enemies.every(e => !e.alive)) {
       wave++;
       waveDisplay.textContent = wave;
       pendingUpgrade = true;
@@ -613,17 +570,17 @@
   }
 
   function updateChats() {
-    for (var i = chats.length - 1; i >= 0; i--) {
-      var chat = chats[i];
-      var dx = player.x - chat.x;
-      var dy = player.y - chat.y;
-      var dist = Math.hypot(dx, dy);
+    for (let i = chats.length - 1; i >= 0; i--) {
+      const chat = chats[i];
+      const dx = player.x - chat.x;
+      const dy = player.y - chat.y;
+      const dist = Math.hypot(dx, dy);
       if (dist > 20) {
         chat.x += (dx / dist) * chat.speed;
         chat.y += (dy / dist) * chat.speed;
       }
-      for (var j = 0; j < enemies.length; j++) {
-        var e = enemies[j];
+      for (let j = 0; j < enemies.length; j++) {
+        const e = enemies[j];
         if (e.alive && Math.hypot(chat.x - e.x, chat.y - e.y) < chat.size + e.size) {
           e.alive = false;
           croixNoisette.push({ x: chat.x, y: chat.y });
@@ -654,22 +611,22 @@
     ctx.fillText(player.health + "❤", player.x, player.y - player.size - 15);
 
     if (player.isReloading) {
-      var elapsed = Date.now() - player.reloadStartTime;
-      var percent = Math.min(elapsed / player.reloadTime, 1);
+      const elapsed = Date.now() - player.reloadStartTime;
+      const percent = Math.min(elapsed / player.reloadTime, 1);
       ctx.fillStyle = 'black';
       ctx.fillRect(player.x - 20, player.y + player.size + 10, 40, 6);
       ctx.fillStyle = '#00ff00';
       ctx.fillRect(player.x - 20, player.y + player.size + 10, 40 * percent, 6);
     }
 
-    bullets.forEach(function(b) {
+    bullets.forEach(b => {
       ctx.fillStyle = '#ffff00';
       ctx.beginPath();
       ctx.arc(b.x, b.y, b.size, 0, Math.PI * 2);
       ctx.fill();
     });
 
-    chats.forEach(function(chat) {
+    chats.forEach(chat => {
       ctx.fillStyle = '#ffaa33';
       ctx.beginPath();
       ctx.ellipse(chat.x, chat.y, chat.size * 1.2, chat.size, 0, 0, Math.PI * 2);
@@ -716,11 +673,11 @@
       ctx.fillText("Noisette", chat.x, chat.y - chat.size - 10);
     });
 
-    enemies.forEach(function(e) {
+    enemies.forEach(e => {
       if (!e.alive) return;
 
       if (e.isBoss) {
-        var size = e.size;
+        const size = e.size;
         ctx.save();
         ctx.translate(e.x, e.y);
         ctx.rotate(e.speed * 0.1);
@@ -767,8 +724,8 @@
           ctx.fill();
 
           ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
-          var wingLength = e.size * 1.8;
-          var wingWidth = e.size * 0.5;
+          const wingLength = e.size * 1.8;
+          const wingWidth = e.size * 0.5;
 
           ctx.beginPath();
           ctx.ellipse(e.x - wingWidth, e.y - wingLength * 0.5, wingWidth, wingLength, Math.PI / 4, 0, Math.PI * 2);
@@ -841,14 +798,13 @@
       }
     });
 
-    croixNoisette.forEach(function(c) {
+    croixNoisette.forEach(c => {
       ctx.strokeStyle = 'black';
       ctx.lineWidth = 5;
-
-      var crossHeight = 50;
-      var crossWidth = 20;
-      var crossBarHeight = 15;
-      var barWidth = 30;
+      const crossHeight = 50;
+      const crossWidth = 20;
+      const crossBarHeight = 15;
+      const barWidth = 30;
 
       ctx.beginPath();
       ctx.moveTo(c.x, c.y - crossHeight / 2);
@@ -863,20 +819,20 @@
   }
 
   function showUpgradeMenu() {
-    var menu = document.createElement('div');
+    const menu = document.createElement('div');
     menu.innerHTML = '<div>Choisis ton bonus :</div>';
-    var upgrades = [
+    const upgrades = [
       { id: 'damage', label: '+ Dégâts' },
       { id: 'firerate', label: '+ Vitesse des balles' },
       { id: 'speed', label: '+ Vitesse de déplacement' },
       { id: 'heart', label: '+1 vie' },
       { id: 'reloadBoost', label: 'Recharge plus rapide' }
     ];
-    var selected = upgrades.sort(function() { return 0.5 - Math.random(); }).slice(0, 2);
-    selected.forEach(function(upg) {
-      var btn = document.createElement('button');
+    const selected = upgrades.sort(() => 0.5 - Math.random()).slice(0, 2);
+    selected.forEach(upg => {
+      const btn = document.createElement('button');
       btn.textContent = upg.label;
-      btn.onclick = function() { chooseUpgrade(upg.id); };
+      btn.onclick = () => chooseUpgrade(upg.id);
       menu.appendChild(btn);
     });
     showMenu(menu);
@@ -896,31 +852,31 @@
 
   function spawnEnemies() {
     enemies = [];
-    var isBossWave = wave % 5 === 0;
-    var safeDistance = 400;
+    const isBossWave = wave % 5 === 0;
+    const safeDistance = 400;
 
     function getRandomSafePos() {
-      var x, y, dist;
+      let x, y, dist;
       do {
         x = Math.random() * width;
         y = Math.random() * height;
         dist = Math.hypot(player.x - x, player.y - y);
       } while (dist < safeDistance);
-      return {x: x, y: y};
+      return {x, y};
     }
 
     if (isBossWave) {
-      var pos = getRandomSafePos();
+      const pos = getRandomSafePos();
       enemies.push({ x: pos.x, y: pos.y, size: 60, speed: 2 + wave * 0.05, alive: true, hp: 50 + wave * 3, isBoss: true, name: "Oiseau" });
     }
 
-    var total = Math.floor(8 + wave * 1.5);
-    for (var i = 0; i < total; i++) {
-      var pos = getRandomSafePos();
+    const total = Math.floor(8 + wave * 1.5);
+    for (let i = 0; i < total; i++) {
+      const pos = getRandomSafePos();
       enemies.push({ x: pos.x, y: pos.y, size: 18 + wave * 0.3, speed: 1.8 + Math.log(wave + 1) * 0.6, alive: true, hp: wave + Math.floor(wave / 2), isBoss: false, name: "Libellule" });
     }
 
-    var pos = getRandomSafePos();
+    const pos = getRandomSafePos();
     enemies.push({ x: pos.x, y: pos.y, size: 30 + Math.log(wave + 1) * 1.5, speed: 1.2 + (wave * 0.2), alive: true, hp: wave * 4, isBoss: false, name: "Souris Z-" + wave });
   }
 
@@ -932,23 +888,23 @@
     draw();
   }
 
+  // Initial resize
   resizeCanvas();
 
   showMenu(
-    '<div>Entrez votre nom de guerrier galactique :</div>' +
-    '<input type="text" id="playerNameInput" placeholder="MC Alex" />' +
-    '<button onclick="playerName = document.getElementById(\'playerNameInput\').value || \'MC Alex\'; startGame()">Démarrer</button>'
+    `<div>Entrez votre nom de guerrier galactique :</div>
+     <input type="text" id="playerNameInput" placeholder="MC Alex" />
+     <button id="startBtn">Démarrer</button>`
   );
 
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('service-worker.js')
-    .then(function() { console.log('Service Worker enregistré !'); })
-    .catch(function(err) { console.error('Erreur enregistrement SW:', err); });
-  }
+  const startBtn = document.getElementById('startBtn');
+  startBtn.addEventListener('click', () => {
+    playerName = document.getElementById('playerNameInput').value.trim() || "MC Alex";
+    startGame();
+  });
 
-  // --- Contrôles tactiles ---
+  // --- Touch controls ---
 
-  // Affiche controls tactiles si tactile détecté
   function isTouchDevice() {
     return 'ontouchstart' in window || navigator.maxTouchPoints > 0;
   }
@@ -995,7 +951,6 @@
     const dx = joystickPos.x - joystickCenter.x;
     const dy = joystickPos.y - joystickCenter.y;
     if (dx === 0 && dy === 0) return;
-
     player.angle = Math.atan2(dy, dx);
   }
 
@@ -1034,7 +989,6 @@
       e.preventDefault();
       keys[key] = false;
     });
-    // Suppression touchcancel pour éviter bugs
   });
 
   // Bouton reload
