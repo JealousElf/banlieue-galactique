@@ -147,14 +147,23 @@
 
   // Dash variables
   const dashDistance = 120;  // distance du dash
-  let playerCanDash = true;
+  let playerDashMax = 1;      // nombre max de dash possibles
+  let playerCanDash = 1;      // dash dispo actuellement
   let chatCanDash = true;
 
-  const player = { x: 0, y: 0, angle: 0, speed: 3, size: 20, ammo: 25, reloadTime: 1500, isReloading: false, health: 3, multiShot: false, bigBullets: false };
+  const player = { 
+    x: 0, y: 0, angle: 0, speed: 3, size: 20, 
+    maxAmmo: 25, ammo: 25, reloadTime: 1500, isReloading: false, 
+    health: 3, multiShot: false, bigBullets: false 
+  };
   const chats = [];
   let enemies = [], bullets = [], croixNoisette = [];
 
-  const keys = {};
+  // Bonus revive Noisette
+  let hasReviveNoisetteBonus = false;
+  let noisetteBaseHealth = 1;  // vie de base initiale Noisette
+  let noisetteSpeed = 2;        // vitesse de base Noisette
+  let noisetteCanRespawn = false;  // autorise respawn de Noisette
 
   // Initial setup after canvas sizing
   function initGamePositions() {
@@ -163,14 +172,20 @@
     mouseX = width / 2;
     mouseY = height / 2;
     chats.length = 0;
-    chats.push({ x: player.x - 50, y: player.y - 50, size: 15, speed: 2 });
+    noisetteBaseHealth = 1;
+    noisetteSpeed = 2;
+    noisetteCanRespawn = false;
+    player.maxAmmo = 25;
+    player.ammo = player.maxAmmo;
+    // Spawn initial Noisette
+    chats.push({ x: player.x - 50, y: player.y - 50, size: 15, speed: noisetteSpeed, health: noisetteBaseHealth, maxHealth: noisetteBaseHealth });
   }
 
   // Event listeners
   window.addEventListener('keydown', e => {
     const key = e.key.toLowerCase();
     keys[key] = true;
-    if (key === 'r' && !player.isReloading && player.ammo < 25) reload();
+    if (key === 'r' && !player.isReloading && player.ammo < player.maxAmmo) reload();
     if (key === 'escape' && gameStarted && !gameOver && !pendingUpgrade) togglePause();
 
     if (key === ' ' || key === 'space') {
@@ -242,6 +257,8 @@
   function tryDash() {
     if (!gameStarted || gameOver || pendingUpgrade || isPaused) return;
 
+    if (playerCanDash <= 0) return; // pas de dash dispo
+
     // Calcul direction dash joueur à partir des touches directionnelles
     let dirX = 0, dirY = 0;
     if (keys['z']) dirY -= 1;
@@ -255,12 +272,10 @@
     const normX = dirX / dist;
     const normY = dirY / dist;
 
-    if (playerCanDash) {
-      player.x += normX * dashDistance;
-      player.y += normY * dashDistance;
-      clampPlayerPosition();
-      playerCanDash = false;
-    }
+    player.x += normX * dashDistance;
+    player.y += normY * dashDistance;
+    clampPlayerPosition();
+    playerCanDash--;
 
     if (chatCanDash && chats.length > 0) {
       const chat = chats[0];
@@ -279,6 +294,45 @@
   function clampChatPosition(chat) {
     chat.x = Math.max(chat.size, Math.min(width - chat.size, chat.x));
     chat.y = Math.max(chat.size, Math.min(height - chat.size, chat.y));
+  }
+
+  // Dessin icône dash sous la tête du joueur, avec max et dispo
+  function drawDashIcon() {
+    const wingWidth = 14;
+    const wingHeight = 20;
+    const startX = player.x - ((wingWidth + 6) * playerDashMax - 6) / 2;
+    const startY = player.y + player.size + 18;
+
+    ctx.lineWidth = 2;
+
+    for (let i = 0; i < playerDashMax; i++) {
+      const x = startX + i * (wingWidth + 6);
+      const isAvailable = i < playerCanDash;
+
+      ctx.strokeStyle = isAvailable ? '#00ffff' : 'gray';
+      ctx.fillStyle = isAvailable ? 'rgba(0, 255, 255, 0.3)' : 'rgba(128,128,128,0.2)';
+
+      ctx.beginPath();
+      // Corps de l'aile (plume)
+      ctx.moveTo(x + wingWidth / 2, startY);
+      ctx.bezierCurveTo(x + wingWidth * 0.8, startY - wingHeight * 0.2, x + wingWidth * 0.6, startY - wingHeight * 0.8, x + wingWidth / 2, startY - wingHeight);
+      ctx.bezierCurveTo(x + wingWidth * 0.4, startY - wingHeight * 0.8, x + wingWidth * 0.2, startY - wingHeight * 0.2, x + wingWidth / 2, startY);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      // Détails plume (traits fins)
+      ctx.beginPath();
+      ctx.moveTo(x + wingWidth / 2, startY - wingHeight);
+      ctx.lineTo(x + wingWidth / 2, startY);
+      ctx.moveTo(x + wingWidth / 2, startY - wingHeight * 0.75);
+      ctx.lineTo(x + wingWidth * 0.7, startY - wingHeight * 0.55);
+      ctx.lineTo(x + wingWidth / 2, startY - wingHeight * 0.6);
+      ctx.lineTo(x + wingWidth * 0.6, startY - wingHeight * 0.3);
+      ctx.moveTo(x + wingWidth / 2, startY - wingHeight * 0.45);
+      ctx.lineTo(x + wingWidth * 0.5, startY - wingHeight * 0.1);
+      ctx.stroke();
+    }
   }
 
   // Fonctions de jeu
@@ -315,15 +369,21 @@
     wave = 1;
     score = 0;
     player.health = 3;
-    player.ammo = 25;
+    player.maxAmmo = 25;
+    player.ammo = player.maxAmmo;
     player.multiShot = false;
     player.bigBullets = false;
     bulletSpeed = 10;
+    hasReviveNoisetteBonus = false;
+    noisetteBaseHealth = 1;
+    noisetteSpeed = 2;
+    noisetteCanRespawn = false;
+    playerDashMax = 1;
+    playerCanDash = playerDashMax;
     ammoDisplay.textContent = player.ammo;
     healthDisplay.textContent = player.health;
     waveDisplay.textContent = wave;
     scoreDisplay.textContent = score;
-    playerCanDash = true;
     chatCanDash = true;
     menus.style.display = 'none';
     info.style.display = 'block';
@@ -336,7 +396,7 @@
     player.isReloading = true;
     player.reloadStartTime = Date.now();
     setTimeout(() => {
-      player.ammo = 25;
+      player.ammo = player.maxAmmo;
       ammoDisplay.textContent = player.ammo;
       player.isReloading = false;
     }, player.reloadTime);
@@ -425,14 +485,13 @@
       info.style.display = 'none';
       showUpgradeMenu();
 
-      // Réinitialiser le dash par vague
-      playerCanDash = true;
+      // Remettre dash dispo à max à chaque vague
+      playerCanDash = playerDashMax;
       chatCanDash = true;
     }
   }
 
   function updateChats() {
-    // Loop backwards for safe removal
     for (let i = chats.length - 1; i >= 0; i--) {
       const chat = chats[i];
       const dx = player.x - chat.x;
@@ -448,6 +507,23 @@
           e.alive = false;
           croixNoisette.push({ x: chat.x, y: chat.y });
           chats.splice(i, 1);
+
+          // Si bonus revive activé, et que Noisette peut respawn
+          if (hasReviveNoisetteBonus && noisetteCanRespawn) {
+            // Double la vitesse et la vie max à chaque respawn
+            noisetteSpeed *= 2;
+            noisetteBaseHealth *= 2;
+            chats.push({ 
+              x: player.x - 50, 
+              y: player.y - 50, 
+              size: 15, 
+              speed: noisetteSpeed,  
+              health: noisetteBaseHealth, 
+              maxHealth: noisetteBaseHealth 
+            });
+            noisetteCanRespawn = false; // Une seule réapparition possible
+          }
+
           score++;
           scoreDisplay.textContent = score;
           break;
@@ -469,12 +545,15 @@
     ctx.closePath();
     ctx.fill();
 
-    // Nom et vie
+    // Nom et vie joueur
     ctx.fillStyle = 'white';
     ctx.font = '14px monospace';
     ctx.textAlign = 'center';
     ctx.fillText(playerName, player.x, player.y - player.size - 30);
     ctx.fillText(player.health + "❤", player.x, player.y - player.size - 15);
+
+    // Dessin icône dash sous la tête du joueur
+    drawDashIcon();
 
     // Barre de recharge
     if (player.isReloading) {
@@ -546,6 +625,11 @@
       ctx.fillStyle = 'white';
       ctx.font = '12px monospace';
       ctx.fillText("Noisette", chat.x, chat.y - chat.size - 10);
+
+      // Vie au-dessus de la tête de Noisette
+      ctx.fillStyle = 'white';
+      ctx.font = '14px monospace';
+      ctx.fillText(chat.health + "❤", chat.x, chat.y - chat.size - 25);
     });
 
     // Ennemis
@@ -704,10 +788,21 @@
       { id: 'damage', label: '+ Dégâts' },
       { id: 'firerate', label: '+ Vitesse des balles' },
       { id: 'speed', label: '+ Vitesse de déplacement' },
-      { id: 'heart', label: '+1 vie' },
-      { id: 'reloadBoost', label: 'Recharge plus rapide' }
+      { id: 'heart', label: '+2 vies' },
+      { id: 'reloadBoost', label: 'Recharge plus rapide' },
+      { id: 'reviveNoisette', label: 'Faire revivre Noisette (+vie)' },
+      { id: 'dashIncrease', label: '+1 dash à chaque vague' },
+      { id: 'doubleMagazine', label: 'Double taille du chargeur' }
     ];
-    const selected = upgrades.sort(() => 0.5 - Math.random()).slice(0, 2);
+
+    // Le bonus reviveNoisette est disponible uniquement si aucune Noisette vivante
+    const hasNoisetteAlive = chats.length > 0;
+    let filteredUpgrades = upgrades;
+    if (hasNoisetteAlive) {
+      filteredUpgrades = upgrades.filter(u => u.id !== 'reviveNoisette');
+    }
+
+    const selected = filteredUpgrades.sort(() => 0.5 - Math.random()).slice(0, 2);
     selected.forEach(upg => {
       const btn = document.createElement('button');
       btn.textContent = upg.label;
@@ -719,10 +814,37 @@
 
   function chooseUpgrade(type) {
     if(type === 'damage') damageBonus++;
-    else if(type === 'firerate') bulletSpeed += 2;
-    else if(type === 'speed') player.speed += 0.3;
-    else if(type === 'heart') { player.health++; healthDisplay.textContent = player.health; }
-    else if(type === 'reloadBoost') player.reloadTime = Math.max(200, player.reloadTime * 0.75);
+    else if(type === 'firerate') bulletSpeed += 3;
+    else if(type === 'speed') {
+      player.speed += 1.5;
+      // Bonus vitesse pour tous les chats vivants
+      chats.forEach(chat => {
+        chat.speed += 1.5;
+      });
+    }
+    else if(type === 'heart') { 
+      player.health += 2; 
+      healthDisplay.textContent = player.health; 
+    }
+    else if(type === 'reloadBoost') {
+      player.reloadTime = Math.max(200, player.reloadTime * 0.7);
+    }
+    else if(type === 'reviveNoisette') {
+      hasReviveNoisetteBonus = true;
+      noisetteCanRespawn = true;  // autorise une réapparition
+      if (chats.length === 0) {
+        chats.push({ x: player.x - 50, y: player.y - 50, size: 15, speed: noisetteSpeed, health: noisetteBaseHealth, maxHealth: noisetteBaseHealth });
+      }
+    }
+    else if(type === 'dashIncrease') {
+      playerDashMax++;
+      playerCanDash = playerDashMax;
+    }
+    else if(type === 'doubleMagazine') {
+      player.maxAmmo *= 2;
+      player.ammo = player.maxAmmo; // recharger à la nouvelle capacité max
+      ammoDisplay.textContent = player.ammo;
+    }
     menus.style.display = 'none';
     info.style.display = 'block';
     pendingUpgrade = false;
@@ -780,6 +902,8 @@
     .then(() => console.log('Service Worker enregistré !'))
     .catch(err => console.error('Erreur enregistrement SW:', err));
   }
+
+  const keys = {};
 </script>
 </body>
 </html>
