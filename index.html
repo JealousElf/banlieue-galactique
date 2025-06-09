@@ -13,6 +13,10 @@
       font-family: monospace;
       height: 100vh;
       width: 100vw;
+      -webkit-user-select: none;
+         -moz-user-select: none;
+          -ms-user-select: none;
+              user-select: none;
     }
 
     #gameContainer {
@@ -25,12 +29,14 @@
       display: flex;
       justify-content: center;
       align-items: center;
+      touch-action: none;
     }
 
     #gameCanvas {
       display: block;
       width: 100%;
       height: 100%;
+      touch-action: none;
     }
 
     #info, #reloadMessage {
@@ -70,6 +76,7 @@
       z-index: 1000;
       color: white;
       font-size: 20px;
+      touch-action: none;
     }
 
     button {
@@ -80,6 +87,9 @@
       background: #4caf50;
       color: white;
       cursor: pointer;
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: manipulation;
     }
 
     button:hover {
@@ -97,15 +107,17 @@
     /* Touch controls styles */
     #touchControls {
       position: fixed;
-      bottom: 15px;
+      bottom: 10px;
       left: 0;
       right: 0;
-      height: 150px;
+      height: 180px;
       display: flex;
       justify-content: space-between;
       padding: 0 20px;
       z-index: 2000;
       user-select: none;
+      -webkit-user-select: none;
+      touch-action: none;
     }
 
     #joystickBase {
@@ -130,29 +142,108 @@
     }
 
     #buttonsPad {
-      display: flex;
-      flex-wrap: wrap;
+      position: relative;
       width: 130px;
-      justify-content: space-between;
+      height: 130px;
+      /* On met en pyramide */
+      touch-action: none;
     }
 
-    .touchBtn {
+    /* Pyramid layout for movement buttons */
+    #btnUp {
+      position: absolute;
+      top: 0;
+      left: 35px;
       width: 60px;
       height: 60px;
-      margin: 5px;
       border-radius: 20px;
+      background: #4caf50cc;
+      color: white;
+      font-weight: bold;
+      font-size: 24px;
+      text-align: center;
+      line-height: 60px;
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: none;
+    }
+
+    #btnLeft {
+      position: absolute;
+      bottom: 35px;
+      left: 0;
+      width: 60px;
+      height: 60px;
+      border-radius: 20px;
+      background: #4caf50cc;
+      color: white;
+      font-weight: bold;
+      font-size: 24px;
+      text-align: center;
+      line-height: 60px;
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: none;
+    }
+
+    #btnDown {
+      position: absolute;
+      bottom: 0;
+      left: 35px;
+      width: 60px;
+      height: 60px;
+      border-radius: 20px;
+      background: #4caf50cc;
+      color: white;
+      font-weight: bold;
+      font-size: 24px;
+      text-align: center;
+      line-height: 60px;
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: none;
+    }
+
+    #btnRight {
+      position: absolute;
+      bottom: 35px;
+      right: 0;
+      width: 60px;
+      height: 60px;
+      border-radius: 20px;
+      background: #4caf50cc;
+      color: white;
+      font-weight: bold;
+      font-size: 24px;
+      text-align: center;
+      line-height: 60px;
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: none;
+    }
+
+    /* Reload and pause buttons below */
+    #btnReload, #btnPause {
+      width: 130px;
+      height: 50px;
+      margin-top: 10px;
+      border-radius: 15px;
       background: #4caf50cc;
       color: white;
       font-weight: bold;
       font-size: 18px;
       text-align: center;
-      line-height: 60px;
+      line-height: 50px;
       user-select: none;
+      -webkit-user-select: none;
+      touch-action: manipulation;
+      cursor: pointer;
     }
 
-    .touchBtn:active {
+    #btnReload:active, #btnPause:active {
       background: #388e3c;
     }
+
   </style>
 <link rel="manifest" href="manifest.json" />
 <meta name="theme-color" content="#4caf50" />
@@ -173,12 +264,12 @@
       <div id="joystickKnob"></div>
     </div>
     <div id="buttonsPad">
-      <div id="btnUp" class="touchBtn">↑</div>
-      <div id="btnLeft" class="touchBtn">←</div>
-      <div id="btnDown" class="touchBtn">↓</div>
-      <div id="btnRight" class="touchBtn">→</div>
-      <div id="btnReload" class="touchBtn" style="width: 130px; margin-top: 10px;">Reload (R)</div>
-      <div id="btnPause" class="touchBtn" style="width: 130px; margin-top: 10px;">Pause (ESC)</div>
+      <div id="btnUp">↑</div>
+      <div id="btnLeft">←</div>
+      <div id="btnDown">↓</div>
+      <div id="btnRight">→</div>
+      <div id="btnReload">Reload (R)</div>
+      <div id="btnPause">Pause (ESC)</div>
     </div>
   </div>
 
@@ -300,15 +391,14 @@
   });
 
   // Garde une variable pour savoir si joystick tactile est actif
-  let joystickTouchActive = false;
+  let joystickActive = false;
 
   window.addEventListener('mousemove', function(e) {
-    // Si joystick tactile actif, ignore la souris
-    if (joystickTouchActive) return;
+    // Ignore souris si joystick tactile actif
+    if (joystickActive) return;
     const rect = container.getBoundingClientRect();
     mouseX = e.clientX - rect.left;
     mouseY = e.clientY - rect.top;
-    // Met à jour player.angle via souris sur PC
     var dx = mouseX - player.x, dy = mouseY - player.y;
     player.angle = Math.atan2(dy, dx);
   });
@@ -875,7 +965,6 @@
   let joystickCenter = { x: 0, y: 0 };
   let joystickPos = { x: 0, y: 0 };
 
-  // Flag pour savoir si joystick tactile est actif (bloque visée souris)
   joystickBase.addEventListener('touchstart', e => {
     e.preventDefault();
     joystickActive = true;
@@ -900,7 +989,6 @@
     joystickActive = false;
     joystickKnob.style.left = '50%';
     joystickKnob.style.top = '50%';
-    // Garde dernier angle visée
   });
 
   function updateJoystickAngle() {
@@ -928,7 +1016,7 @@
     joystickKnob.style.top = joystickPos.y + 'px';
   }
 
-  // Touch buttons déplacement
+  // Touch buttons déplacement en pyramide
   const keyMap = {
     btnUp: 'z',
     btnLeft: 'q',
@@ -946,20 +1034,19 @@
       e.preventDefault();
       keys[key] = false;
     });
-    btn.addEventListener('touchcancel', e => {
-      e.preventDefault();
-      keys[key] = false;
-    });
+    // Suppression touchcancel pour éviter bugs
   });
 
   // Bouton reload
-  document.getElementById('btnReload').addEventListener('touchstart', e => {
+  const btnReload = document.getElementById('btnReload');
+  btnReload.addEventListener('touchstart', e => {
     e.preventDefault();
     if (!player.isReloading && player.ammo < 25) reload();
   });
 
   // Bouton pause
-  document.getElementById('btnPause').addEventListener('touchstart', e => {
+  const btnPause = document.getElementById('btnPause');
+  btnPause.addEventListener('touchstart', e => {
     e.preventDefault();
     togglePause();
   });
