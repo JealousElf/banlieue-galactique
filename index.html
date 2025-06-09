@@ -1,364 +1,821 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Banlieue Galactique</title>
-  <style>
-    html, body {
-      margin: 0; padding: 0;
-      overflow: hidden;
-      background: #000014;
-      font-family: monospace;
-      height: 100vh;
-      width: 100vw;
-      -webkit-user-select: none;
-      -moz-user-select: none;
-      -ms-user-select: none;
-      user-select: none;
-      touch-action: manipulation;
-    }
-
-    #gameContainer {
-      position: fixed;
-      top: 20px; left: 20px; right: 20px; bottom: 20px;
-      border: 3px solid #00ffcc;
-      border-radius: 15px;
-      box-shadow: 0 0 20px 5px #4caf50, inset 0 0 20px 2px #00ffff;
-      background: #111133;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      touch-action: none;
-    }
-
-    #gameCanvas {
-      display: block;
-      width: 100%;
-      height: 100%;
-      touch-action: none;
-    }
-
-    #info, #reloadMessage {
-      position: fixed;
-      color: white;
-      z-index: 100;
-      background: rgba(0,0,0,0.5);
-      padding: 10px;
-      border-radius: 8px;
-      user-select: none;
-      touch-action: manipulation;
-    }
-
-    #info {
-      top: 10px;
-      left: 10px;
-    }
-
-    #reloadMessage {
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      font-size: 20px;
-      display: none;
-      z-index: 3000;
-    }
-
-    #menus {
-      position: fixed;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(0,0,0,0.85);
-      display: none;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      z-index: 1000;
-      color: white;
-      font-size: 20px;
-      user-select: none;
-      touch-action: manipulation;
-      padding: 20px;
-    }
-
-    button {
-      margin: 10px;
-      padding: 10px 20px;
-      border-radius: 10px;
-      border: none;
-      background: #4caf50;
-      color: white;
-      cursor: pointer;
-      user-select: none;
-      touch-action: manipulation;
-      font-size: 18px;
-    }
-    button:hover {
-      background: #388e3c;
-    }
-
-    input {
-      padding: 10px;
-      font-size: 16px;
-      border-radius: 8px;
-      border: none;
-      margin-bottom: 10px;
-      width: 220px;
-      text-align: center;
-      user-select: none;
-      touch-action: manipulation;
-    }
-
-    /* Touch controls */
-    #touchControls {
-      position: fixed;
-      bottom: 10px;
-      left: 0; right: 0;
-      height: 180px;
-      display: flex;
-      justify-content: space-between;
-      padding: 0 20px;
-      z-index: 2000;
-      user-select: none;
-      touch-action: none;
-    }
-
-    #joystickBase {
-      position: relative;
-      width: 130px;
-      height: 130px;
-      background: rgba(100, 100, 100, 0.3);
-      border-radius: 50%;
-      touch-action: none;
-      user-select: none;
-    }
-
-    #joystickKnob {
-      position: absolute;
-      left: 50%;
-      top: 50%;
-      width: 60px;
-      height: 60px;
-      background: #4caf50cc;
-      border-radius: 50%;
-      transform: translate(-50%, -50%);
-      touch-action: none;
-      user-select: none;
-    }
-
-    #buttonsPad {
-      position: relative;
-      width: 130px;
-      height: 130px;
-      touch-action: none;
-      user-select: none;
-    }
-
-    /* Pyramide des flèches */
-    #btnUp {
-      position: absolute;
-      top: 0;
-      left: 35px;
-      width: 60px;
-      height: 60px;
-      background: #4caf50cc;
-      border-radius: 20px;
-      color: white;
-      font-weight: bold;
-      font-size: 26px;
-      line-height: 60px;
-      text-align: center;
-      touch-action: manipulation;
-      user-select: none;
-    }
-
-    #btnLeft {
-      position: absolute;
-      bottom: 35px;
-      left: 0;
-      width: 60px;
-      height: 60px;
-      background: #4caf50cc;
-      border-radius: 20px;
-      color: white;
-      font-weight: bold;
-      font-size: 26px;
-      line-height: 60px;
-      text-align: center;
-      touch-action: manipulation;
-      user-select: none;
-    }
-
-    #btnDown {
-      position: absolute;
-      bottom: 0;
-      left: 35px;
-      width: 60px;
-      height: 60px;
-      background: #4caf50cc;
-      border-radius: 20px;
-      color: white;
-      font-weight: bold;
-      font-size: 26px;
-      line-height: 60px;
-      text-align: center;
-      touch-action: manipulation;
-      user-select: none;
-    }
-
-    #btnRight {
-      position: absolute;
-      bottom: 35px;
-      right: 0;
-      width: 60px;
-      height: 60px;
-      background: #4caf50cc;
-      border-radius: 20px;
-      color: white;
-      font-weight: bold;
-      font-size: 26px;
-      line-height: 60px;
-      text-align: center;
-      touch-action: manipulation;
-      user-select: none;
-    }
-
-    #btnReload, #btnPause {
-      width: 130px;
-      height: 50px;
-      margin-top: 10px;
-      border-radius: 15px;
-      background: #4caf50cc;
-      color: white;
-      font-weight: bold;
-      font-size: 18px;
-      line-height: 50px;
-      text-align: center;
-      touch-action: manipulation;
-      user-select: none;
-      cursor: pointer;
-      -webkit-tap-highlight-color: transparent;
-    }
-
-    #btnReload:active, #btnPause:active {
-      background: #388e3c;
-    }
-  </style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Banlieue Galactique - Mobile Ready</title>
+<style>
+  html, body {
+    margin: 0; padding: 0;
+    overflow: hidden;
+    background: #000014;
+    font-family: monospace;
+    height: 100vh;
+    width: 100vw;
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: manipulation;
+  }
+  #gameContainer {
+    position: fixed;
+    top: 20px; left: 20px; right: 20px; bottom: 20px;
+    border: 3px solid #00ffcc;
+    border-radius: 15px;
+    box-shadow: 0 0 20px 5px #4caf50, inset 0 0 20px 2px #00ffff;
+    background: #111133;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    touch-action: none;
+  }
+  #gameCanvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+    touch-action: none;
+  }
+  #info {
+    position: fixed;
+    top: 10px; left: 10px;
+    color: white;
+    background: rgba(0,0,0,0.5);
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-size: 14px;
+    z-index: 100;
+    user-select: none;
+  }
+  #menus {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.85);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    color: white;
+    font-size: 20px;
+    z-index: 1000;
+    user-select: none;
+    padding: 20px;
+    text-align: center;
+  }
+  #menus input {
+    font-size: 18px;
+    padding: 10px;
+    border-radius: 8px;
+    border: none;
+    width: 240px;
+    margin-bottom: 15px;
+    text-align: center;
+  }
+  #menus button {
+    padding: 12px 24px;
+    font-size: 18px;
+    border-radius: 12px;
+    border: none;
+    background: #4caf50;
+    color: white;
+    cursor: pointer;
+    user-select: none;
+  }
+  #menus button:active {
+    background: #388e3c;
+  }
+  /* Touch Controls Container */
+  #touchControls {
+    position: fixed;
+    bottom: 12px;
+    left: 0; right: 0;
+    height: 170px;
+    display: flex;
+    justify-content: space-between;
+    padding: 0 20px;
+    z-index: 1500;
+    user-select: none;
+    pointer-events: none; /* disable by default */
+  }
+  #touchControls.active {
+    pointer-events: auto; /* enable when shown */
+  }
+  /* Joystick left */
+  #joystickBase {
+    position: relative;
+    width: 130px;
+    height: 130px;
+    background: rgba(100, 100, 100, 0.25);
+    border-radius: 50%;
+    touch-action: none;
+    user-select: none;
+  }
+  #joystickKnob {
+    position: absolute;
+    width: 60px; height: 60px;
+    background: #4caf50cc;
+    border-radius: 50%;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    touch-action: none;
+    user-select: none;
+  }
+  /* Right control pad container */
+  #buttonsPad {
+    position: relative;
+    width: 140px;
+    height: 130px;
+    user-select: none;
+    touch-action: none;
+  }
+  /* Pyramid directional buttons */
+  .dirBtn {
+    position: absolute;
+    width: 60px;
+    height: 60px;
+    background: #4caf50cc;
+    border-radius: 20px;
+    color: white;
+    font-weight: bold;
+    font-size: 28px;
+    line-height: 60px;
+    text-align: center;
+    user-select: none;
+    touch-action: manipulation;
+  }
+  #btnUp { top: 0; left: 40px; }
+  #btnLeft { bottom: 40px; left: 0; }
+  #btnDown { bottom: 0; left: 40px; }
+  #btnRight { bottom: 40px; right: 0; }
+  /* Buttons Reload and Pause below pyramid */
+  #btnReload, #btnPause {
+    display: block;
+    margin-top: 12px;
+    width: 140px;
+    height: 48px;
+    border-radius: 16px;
+    background: #4caf50cc;
+    color: white;
+    font-weight: bold;
+    font-size: 18px;
+    text-align: center;
+    line-height: 48px;
+    user-select: none;
+    touch-action: manipulation;
+    cursor: pointer;
+  }
+  #btnReload:active, #btnPause:active {
+    background: #388e3c;
+  }
+</style>
 </head>
 <body>
   <div id="gameContainer">
     <canvas id="gameCanvas"></canvas>
   </div>
 
-  <div id="info">Munitions: <span id="ammoCount">25</span> | Vie: <span id="healthCount">3</span> | Vague: <span id="waveCount">1</span> | Score: <span id="scoreCount">0</span></div>
-  <div id="menus"></div>
-  <div id="reloadMessage">Appuie sur R pour recharger !</div>
+  <div id="info" style="display:none;">
+    Munitions: <span id="ammoCount">25</span> | Vie: <span id="healthCount">3</span> | Vague: <span id="waveCount">1</span> | Score: <span id="scoreCount">0</span>
+  </div>
 
-  <!-- Touch controls for mobile -->
-  <div id="touchControls" style="display:none;">
+  <div id="menus">
+    <div>Entrez votre nom de guerrier galactique :</div>
+    <input type="text" id="playerNameInput" placeholder="MC Alex" />
+    <button id="startBtn">Démarrer</button>
+  </div>
+
+  <!-- Touch Controls -->
+  <div id="touchControls">
     <div id="joystickBase">
       <div id="joystickKnob"></div>
     </div>
     <div id="buttonsPad">
-      <div id="btnUp">↑</div>
-      <div id="btnLeft">←</div>
-      <div id="btnDown">↓</div>
-      <div id="btnRight">→</div>
-      <div id="btnReload">Reload (R)</div>
-      <div id="btnPause">Pause (ESC)</div>
+      <div id="btnUp" class="dirBtn">↑</div>
+      <div id="btnLeft" class="dirBtn">←</div>
+      <div id="btnDown" class="dirBtn">↓</div>
+      <div id="btnRight" class="dirBtn">→</div>
+      <button id="btnReload">Reload (R)</button>
+      <button id="btnPause">Pause (ESC)</button>
     </div>
   </div>
 
 <script>
-  const canvas = document.getElementById("gameCanvas");
-  const ctx = canvas.getContext("2d");
-  const container = document.getElementById("gameContainer");
-
-  // Fullscreen style handling
-  function onFullScreenChange() {
-    if (document.fullscreenElement === container ||
-        document.webkitFullscreenElement === container ||
-        document.msFullscreenElement === container) {
-      container.style.top = '0';
-      container.style.left = '0';
-      container.style.right = '0';
-      container.style.bottom = '0';
-      container.style.border = 'none';
-      container.style.borderRadius = '0';
-      container.style.boxShadow = 'none';
-    } else {
-      container.style.top = '20px';
-      container.style.left = '20px';
-      container.style.right = '20px';
-      container.style.bottom = '20px';
-      container.style.border = '3px solid #00ffcc';
-      container.style.borderRadius = '15px';
-      container.style.boxShadow = '0 0 20px 5px #4caf50, inset 0 0 20px 2px #00ffff';
-    }
-
-    resizeCanvas();
-
-    player.x = width / 2;
-    player.y = height / 2;
-    mouseX = width / 2;
-    mouseY = height / 2;
-
-    chats.forEach(c => { c.x = player.x - 50; c.y = player.y - 50; });
-
-    if (!isPaused && !gameOver && !animationFrameId) {
-      loop();
-    }
-  }
-  document.addEventListener('fullscreenchange', onFullScreenChange);
-  document.addEventListener('webkitfullscreenchange', onFullScreenChange);
-  document.addEventListener('msfullscreenchange', onFullScreenChange);
+  // Setup canvas and sizing
+  const canvas = document.getElementById('gameCanvas');
+  const ctx = canvas.getContext('2d');
+  const container = document.getElementById('gameContainer');
 
   let width, height;
-  let animationFrameId = null;
-
-  const backgroundCanvas = document.createElement('canvas');
-  const bgCtx = backgroundCanvas.getContext('2d');
-
   function resizeCanvas() {
     canvas.width = container.clientWidth;
     canvas.height = container.clientHeight;
     width = canvas.width;
     height = canvas.height;
-    backgroundCanvas.width = width;
-    backgroundCanvas.height = height;
     createBackground();
   }
   window.addEventListener('resize', resizeCanvas);
 
-  const menus = document.getElementById('menus');
-  const reloadMessage = document.getElementById('reloadMessage');
-  const info = document.getElementById('info');
-  const ammoDisplay = document.getElementById('ammoCount');
-  const healthDisplay = document.getElementById('healthCount');
-  const waveDisplay = document.getElementById('waveCount');
-  const scoreDisplay = document.getElementById('scoreCount');
+  // Background offscreen canvas
+  const bgCanvas = document.createElement('canvas');
+  const bgCtx = bgCanvas.getContext('2d');
 
-  let gameStarted = false, gameOver = false, pendingUpgrade = false, isPaused = false;
+  function createBackground() {
+    bgCanvas.width = width;
+    bgCanvas.height = height;
+    bgCtx.fillStyle = '#88cc55';
+    bgCtx.fillRect(0, 0, width, height);
+    for(let i=0; i<300; i++) {
+      let x = Math.random() * width;
+      let y = Math.random() * height;
+      let s = Math.random()*2+1;
+      bgCtx.fillStyle = 'rgba(34,85,12,'+(Math.random()*0.5+0.3)+')';
+      bgCtx.beginPath();
+      bgCtx.ellipse(x,y,s*0.5,s,0,0,Math.PI*2);
+      bgCtx.fill();
+    }
+  }
+
+  function drawBackground() {
+    ctx.drawImage(bgCanvas, 0, 0);
+  }
+
+  // Game variables
+  let animationId = null;
+  let isPaused = false;
+  let gameStarted = false;
+  let gameOver = false;
+  let pendingUpgrade = false;
+
   let playerName = "MC Alex";
   let damageBonus = 0, wave = 1, score = 0;
-  let mouseX, mouseY;
   let bulletSpeed = 10;
 
-  const player = { x: 0, y: 0, angle: 0, speed: 3, size: 20, ammo: 25, reloadTime: 1500, isReloading: false, health: 3, multiShot: false, bigBullets: false };
+  const player = {
+    x: 0, y: 0, angle: 0, speed: 3, size: 20,
+    ammo: 25, reloadTime: 1500, isReloading: false,
+    health: 3, multiShot: false, bigBullets: false
+  };
+
   const chats = [];
-  let enemies = [], bullets = [], croixNoisette = [];
+  let enemies = [];
+  let bullets = [];
+  let croixNoisette = [];
 
   const keys = {};
 
+  // Init positions
   function initGamePositions() {
-    player.x = width / 2;
-    player.y = height / 2;
-    mouseX = width / 2;
-    mouseY = height / 2;
+    player.x = width/2;
+    player.y = height/2;
+    mouseX = width/2;
+    mouseY = height/2;
     chats.length = 0;
     chats.push({ x: player.x - 50, y: player.y - 50, size: 15, speed: 2 });
   }
 
-  // Menu démarrage tactile + PC
+  // Event listeners PC keyboard
+  window.addEventListener('keydown', e => {
+    keys[e.key.toLowerCase()] = true;
+    if(e.key.toLowerCase() === 'r' && !player.isReloading && player.ammo < 25) reload();
+    if(e.key === 'Escape' && gameStarted && !gameOver && !pendingUpgrade) togglePause();
+  });
+  window.addEventListener('keyup', e => { keys[e.key.toLowerCase()] = false; });
+
+  // PC Mouse aim + shoot
+  let mouseX = 0, mouseY = 0;
+  window.addEventListener('mousemove', e => {
+    if (joystickActive) return;
+    const rect = container.getBoundingClientRect();
+    mouseX = e.clientX - rect.left;
+    mouseY = e.clientY - rect.top;
+    player.angle = Math.atan2(mouseY - player.y, mouseX - player.x);
+  });
+  window.addEventListener('mousedown', () => { if(!isPaused) shoot(); });
+
+  // Joystick logic (left side)
+  const joystickBase = document.getElementById('joystickBase');
+  const joystickKnob = document.getElementById('joystickKnob');
+  let joystickActive = false;
+  let joystickCenter = {x:0,y:0};
+  let joystickPos = {x:0,y:0};
+
+  joystickBase.addEventListener('touchstart', e => {
+    e.preventDefault();
+    joystickActive = true;
+    const rect = joystickBase.getBoundingClientRect();
+    joystickCenter.x = rect.left + rect.width/2;
+    joystickCenter.y = rect.top + rect.height/2;
+    const touch = e.touches[0];
+    setKnob(touch.clientX, touch.clientY);
+    updateJoystickAngle();
+  });
+  joystickBase.addEventListener('touchmove', e => {
+    e.preventDefault();
+    if(!joystickActive) return;
+    const touch = e.touches[0];
+    setKnob(touch.clientX, touch.clientY);
+    updateJoystickAngle();
+  });
+  joystickBase.addEventListener('touchend', e => {
+    e.preventDefault();
+    joystickActive = false;
+    joystickKnob.style.left = '50%';
+    joystickKnob.style.top = '50%';
+  });
+
+  function setKnob(x, y) {
+    const maxDist = joystickBase.clientWidth / 2;
+    let dx = x - joystickCenter.x;
+    let dy = y - joystickCenter.y;
+    let dist = Math.sqrt(dx*dx + dy*dy);
+    if(dist > maxDist) {
+      const ratio = maxDist / dist;
+      dx *= ratio; dy *= ratio;
+    }
+    joystickPos.x = joystickCenter.x + dx;
+    joystickPos.y = joystickCenter.y + dy;
+    joystickKnob.style.left = joystickPos.x + 'px';
+    joystickKnob.style.top = joystickPos.y + 'px';
+  }
+
+  function updateJoystickAngle() {
+    const dx = joystickPos.x - joystickCenter.x;
+    const dy = joystickPos.y - joystickCenter.y;
+    if(dx === 0 && dy === 0) return;
+    player.angle = Math.atan2(dy, dx);
+  }
+
+  // Touch buttons for movement (right side)
+  const keyMap = {
+    btnUp: 'z',
+    btnLeft: 'q',
+    btnDown: 's',
+    btnRight: 'd'
+  };
+  Object.entries(keyMap).forEach(([btnId, key]) => {
+    const btn = document.getElementById(btnId);
+    btn.addEventListener('touchstart', e => {
+      e.preventDefault();
+      keys[key] = true;
+    });
+    btn.addEventListener('touchend', e => {
+      e.preventDefault();
+      keys[key] = false;
+    });
+  });
+
+  // Reload button
+  const btnReload = document.getElementById('btnReload');
+  btnReload.addEventListener('touchstart', e => {
+    e.preventDefault();
+    if(!player.isReloading && player.ammo < 25) reload();
+  });
+
+  // Pause button
+  const btnPause = document.getElementById('btnPause');
+  btnPause.addEventListener('touchstart', e => {
+    e.preventDefault();
+    togglePause();
+  });
+
+  // Reload function
+  function reload() {
+    player.isReloading = true;
+    player.reloadStartTime = Date.now();
+    setTimeout(() => {
+      player.ammo = 25;
+      ammoDisplay.textContent = player.ammo;
+      player.isReloading = false;
+    }, player.reloadTime);
+  }
+
+  // Shoot function
+  function shoot() {
+    if(!gameStarted || player.isReloading || gameOver || pendingUpgrade || isPaused) return;
+    if(player.ammo <= 0) {
+      reloadMessage.style.display = 'block';
+      setTimeout(() => { reloadMessage.style.display = 'none'; }, 1500);
+      return;
+    }
+    player.ammo--;
+    ammoDisplay.textContent = player.ammo;
+    let bulletSize = player.bigBullets ? 10 : 5;
+    if(player.multiShot) {
+      bullets.push({x:player.x, y:player.y, angle:player.angle+0.1, size:bulletSize});
+      bullets.push({x:player.x, y:player.y, angle:player.angle-0.1, size:bulletSize});
+    } else {
+      bullets.push({x:player.x, y:player.y, angle:player.angle, size:bulletSize});
+    }
+  }
+
+  // Bound player inside canvas
+  function keepInsideBounds() {
+    player.x = Math.max(player.size, Math.min(width - player.size, player.x));
+    player.y = Math.max(player.size, Math.min(height - player.size, player.y));
+  }
+
+  // Update function (game loop logic)
+  function update() {
+    if(!gameStarted || gameOver || pendingUpgrade) return;
+
+    // Movement keys
+    if(keys['z']) player.y -= player.speed;
+    if(keys['s']) player.y += player.speed;
+    if(keys['q']) player.x -= player.speed;
+    if(keys['d']) player.x += player.speed;
+
+    keepInsideBounds();
+
+    // Update bullets
+    for(let i=bullets.length-1; i>=0; i--) {
+      let b = bullets[i];
+      b.x += Math.cos(b.angle) * bulletSpeed;
+      b.y += Math.sin(b.angle) * bulletSpeed;
+
+      for(let j=0; j<enemies.length; j++) {
+        let e = enemies[j];
+        if(e.alive && Math.hypot(b.x - e.x, b.y - e.y) < e.size + b.size) {
+          e.hp -= 1 + damageBonus;
+          if(e.hp <= 0) {
+            e.alive = false;
+            if(e.isBoss) {
+              const reward = Math.random() < 0.5 ? 'multiShot' : 'bigBullets';
+              if(reward === 'multiShot') player.multiShot = true;
+              else if(reward === 'bigBullets') player.bigBullets = true;
+            }
+            score++;
+            scoreDisplay.textContent = score;
+          }
+          bullets.splice(i,1);
+          break;
+        }
+      }
+    }
+
+    // Enemies AI
+    for(let enemy of enemies) {
+      if(!enemy.alive) continue;
+      let dx = player.x - enemy.x;
+      let dy = player.y - enemy.y;
+      let dist = Math.hypot(dx, dy);
+      enemy.x += (dx / dist) * enemy.speed;
+      enemy.y += (dy / dist) * enemy.speed;
+      if(dist < enemy.size + player.size) {
+        enemy.alive = false;
+        player.health--;
+        healthDisplay.textContent = player.health;
+        if(player.health <= 0) {
+          gameOver = true;
+          showMenu(`<div>Tu es mort à la vague ${wave} avec un score de ${score}</div><button onclick="location.reload()">Rejouer</button>`);
+        }
+      }
+    }
+
+    if(enemies.every(e => !e.alive)) {
+      wave++;
+      waveDisplay.textContent = wave;
+      pendingUpgrade = true;
+      info.style.display = 'none';
+      showUpgradeMenu();
+    }
+  }
+
+  // Update chats (friendly)
+  function updateChats() {
+    for(let i=chats.length-1; i>=0; i--) {
+      let c = chats[i];
+      let dx = player.x - c.x;
+      let dy = player.y - c.y;
+      let dist = Math.hypot(dx, dy);
+      if(dist > 20) {
+        c.x += (dx / dist) * c.speed;
+        c.y += (dy / dist) * c.speed;
+      }
+      for(let e of enemies) {
+        if(e.alive && Math.hypot(c.x - e.x, c.y - e.y) < c.size + e.size) {
+          e.alive = false;
+          croixNoisette.push({x:c.x, y:c.y});
+          chats.splice(i,1);
+          score++;
+          scoreDisplay.textContent = score;
+          break;
+        }
+      }
+    }
+  }
+
+  // Draw everything
+  function draw() {
+    drawBackground();
+
+    // Draw player as triangle
+    ctx.fillStyle = '#4caf50';
+    ctx.beginPath();
+    ctx.moveTo(player.x + Math.cos(player.angle)*player.size, player.y + Math.sin(player.angle)*player.size);
+    ctx.lineTo(player.x + Math.cos(player.angle + 2.5)*player.size*0.7, player.y + Math.sin(player.angle + 2.5)*player.size*0.7);
+    ctx.lineTo(player.x + Math.cos(player.angle - 2.5)*player.size*0.7, player.y + Math.sin(player.angle - 2.5)*player.size*0.7);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.fillStyle = 'white';
+    ctx.font = '14px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(playerName, player.x, player.y - player.size - 30);
+    ctx.fillText(player.health + "❤", player.x, player.y - player.size - 15);
+
+    // Reload bar if reloading
+    if(player.isReloading) {
+      let elapsed = Date.now() - player.reloadStartTime;
+      let percent = Math.min(elapsed / player.reloadTime, 1);
+      ctx.fillStyle = 'black';
+      ctx.fillRect(player.x - 20, player.y + player.size + 10, 40, 6);
+      ctx.fillStyle = '#00ff00';
+      ctx.fillRect(player.x - 20, player.y + player.size + 10, 40*percent, 6);
+    }
+
+    // Bullets
+    bullets.forEach(b => {
+      ctx.fillStyle = '#ffff00';
+      ctx.beginPath();
+      ctx.arc(b.x, b.y, b.size, 0, Math.PI*2);
+      ctx.fill();
+    });
+
+    // Chats (friendly)
+    chats.forEach(c => {
+      ctx.fillStyle = '#ffaa33';
+      ctx.beginPath();
+      ctx.ellipse(c.x, c.y, c.size*1.2, c.size, 0, 0, Math.PI*2);
+      ctx.fill();
+
+      ctx.fillStyle = '#ffaa33';
+      ctx.beginPath();
+      ctx.arc(c.x, c.y - c.size*1.2, c.size*0.8, 0, Math.PI*2);
+      ctx.fill();
+
+      ctx.fillStyle = '#ff9933';
+      ctx.beginPath();
+      ctx.moveTo(c.x - c.size*0.5, c.y - c.size*1.7);
+      ctx.lineTo(c.x - c.size*0.2, c.y - c.size*1.5);
+      ctx.lineTo(c.x - c.size*0.4, c.y - c.size*1.3);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.moveTo(c.x + c.size*0.5, c.y - c.size*1.7);
+      ctx.lineTo(c.x + c.size*0.2, c.y - c.size*1.5);
+      ctx.lineTo(c.x + c.size*0.4, c.y - c.size*1.3);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.fillStyle = 'black';
+      ctx.beginPath();
+      ctx.ellipse(c.x - c.size*0.25, c.y - c.size*1.2, c.size*0.15, c.size*0.25, 0, 0, Math.PI*2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.ellipse(c.x + c.size*0.25, c.y - c.size*1.2, c.size*0.15, c.size*0.25, 0, 0, Math.PI*2);
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.moveTo(c.x, c.y - c.size*1.0);
+      ctx.lineTo(c.x - c.size*0.15, c.y - c.size*0.85);
+      ctx.lineTo(c.x + c.size*0.15, c.y - c.size*0.85);
+      ctx.closePath();
+      ctx.fillStyle = '#cc6600';
+      ctx.fill();
+
+      ctx.fillStyle = 'white';
+      ctx.font = '12px monospace';
+      ctx.fillText("Noisette", c.x, c.y - c.size - 10);
+    });
+
+    // Enemies
+    enemies.forEach(e => {
+      if(!e.alive) return;
+      if(e.isBoss) {
+        let size = e.size;
+        ctx.save();
+        ctx.translate(e.x, e.y);
+        ctx.rotate(e.speed*0.1);
+
+        ctx.fillStyle = '#ff00ff';
+        ctx.beginPath();
+        ctx.ellipse(0, 0, size*0.7, size*1.1, 0, 0, Math.PI*2);
+        ctx.fill();
+
+        ctx.fillStyle = '#cc00cc';
+        ctx.beginPath();
+        ctx.arc(0, -size*1.0, size*0.5, 0, Math.PI*2);
+        ctx.fill();
+
+        ctx.fillStyle = '#ff88ff';
+        ctx.beginPath();
+        ctx.moveTo(0, -size*1.3);
+        ctx.lineTo(size*0.3, -size*0.9);
+        ctx.lineTo(-size*0.3, -size*0.9);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.fillStyle = '#dd00dd';
+        ctx.beginPath();
+        ctx.ellipse(-size*0.8, 0, size*0.3, size*0.8, Math.PI/6, 0, Math.PI*2);
+        ctx.fill();
+
+        ctx.beginPath();
+        ctx.ellipse(size*0.8, 0, size*0.3, size*0.8, -Math.PI/6, 0, Math.PI*2);
+        ctx.fill();
+
+        ctx.restore();
+
+        ctx.fillStyle = 'white';
+        ctx.font = '14px monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText(e.name + " " + e.hp + "❤", e.x, e.y - e.size - 10);
+
+      } else {
+        if(e.name.startsWith("Libellule")) {
+          ctx.fillStyle = '#d32f2f';
+          ctx.beginPath();
+          ctx.ellipse(e.x, e.y, e.size*0.5, e.size*1.5, 0, 0, Math.PI*2);
+          ctx.fill();
+
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+          let wingLength = e.size*1.8;
+          let wingWidth = e.size*0.5;
+
+          ctx.beginPath();
+          ctx.ellipse(e.x - wingWidth, e.y - wingLength*0.5, wingWidth, wingLength, Math.PI/4, 0, Math.PI*2);
+          ctx.fill();
+
+          ctx.beginPath();
+          ctx.ellipse(e.x + wingWidth, e.y - wingLength*0.5, wingWidth, wingLength, -Math.PI/4, 0, Math.PI*2);
+          ctx.fill();
+
+          ctx.beginPath();
+          ctx.ellipse(e.x - wingWidth, e.y + wingLength*0.5, wingWidth, wingLength, -Math.PI/4, 0, Math.PI*2);
+          ctx.fill();
+
+          ctx.beginPath();
+          ctx.ellipse(e.x + wingWidth, e.y + wingLength*0.5, wingWidth, wingLength, Math.PI/4, 0, Math.PI*2);
+          ctx.fill();
+
+          ctx.fillStyle = '#b22222';
+          ctx.beginPath();
+          ctx.arc(e.x, e.y - e.size*1.2, e.size*0.6, 0, Math.PI*2);
+          ctx.fill();
+
+          ctx.fillStyle = 'black';
+          ctx.beginPath();
+          ctx.arc(e.x - e.size*0.2, e.y - e.size*1.3, e.size*0.1, 0, Math.PI*2);
+          ctx.arc(e.x + e.size*0.2, e.y - e.size*1.3, e.size*0.1, 0, Math.PI*2);
+          ctx.fill();
+
+          ctx.fillStyle = 'white';
+          ctx.font = '14px monospace';
+          ctx.textAlign = 'center';
+          ctx.fillText(e.name + " " + e.hp + "❤", e.x, e.y - e.size - 10);
+
+        } else if(e.name.startsWith("Souris")) {
+          ctx.fillStyle = '#a0522d';
+          ctx.beginPath();
+          ctx.ellipse(e.x, e.y, e.size*1.2, e.size*0.8, 0, 0, Math.PI*2);
+          ctx.fill();
+
+          ctx.fillStyle = '#8b4513';
+          ctx.beginPath();
+          ctx.arc(e.x + e.size*1.0, e.y - e.size*0.2, e.size*0.7, 0, Math.PI*2);
+          ctx.fill();
+
+          ctx.fillStyle = '#deb887';
+          ctx.beginPath();
+          ctx.arc(e.x + e.size*1.4, e.y - e.size*0.8, e.size*0.3, 0, Math.PI*2);
+          ctx.fill();
+          ctx.beginPath();
+          ctx.arc(e.x + e.size*0.7, e.y - e.size*0.9, e.size*0.25, 0, Math.PI*2);
+          ctx.fill();
+
+          ctx.fillStyle = 'black';
+          ctx.beginPath();
+          ctx.arc(e.x + e.size*1.0, e.y - e.size*0.3, e.size*0.15, 0, Math.PI*2);
+          ctx.fill();
+
+          ctx.strokeStyle = '#8b4513';
+          ctx.lineWidth = 4;
+          ctx.beginPath();
+          ctx.moveTo(e.x - e.size*1.2, e.y + e.size*0.5);
+          ctx.quadraticCurveTo(e.x - e.size*1.8, e.y + e.size*1.5, e.x - e.size*1.0, e.y + e.size*2.0);
+          ctx.stroke();
+
+          ctx.fillStyle = 'white';
+          ctx.font = '14px monospace';
+          ctx.textAlign = 'center';
+          ctx.fillText(e.name + " " + e.hp + "❤", e.x, e.y - e.size - 10);
+        }
+      }
+    });
+
+    croixNoisette.forEach(c => {
+      ctx.strokeStyle = 'black';
+      ctx.lineWidth = 5;
+      const crossHeight = 50;
+      const barWidth = 30;
+      const crossBarHeight = 15;
+
+      ctx.beginPath();
+      ctx.moveTo(c.x, c.y - crossHeight / 2);
+      ctx.lineTo(c.x, c.y + crossHeight / 2);
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(c.x - barWidth/2, c.y - crossHeight / 2 + crossBarHeight);
+      ctx.lineTo(c.x + barWidth/2, c.y - crossHeight / 2 + crossBarHeight);
+      ctx.stroke();
+    });
+  }
+
+  // Show upgrade menu
+  function showUpgradeMenu() {
+    const menu = document.createElement('div');
+    menu.innerHTML = '<div>Choisis ton bonus :</div>';
+    const upgrades = [
+      { id:'damage', label:'+ Dégâts' },
+      { id:'firerate', label:'+ Vitesse des balles' },
+      { id:'speed', label:'+ Vitesse de déplacement' },
+      { id:'heart', label:'+1 vie' },
+      { id:'reloadBoost', label:'Recharge plus rapide' }
+    ];
+    const selected = upgrades.sort(() => 0.5 - Math.random()).slice(0, 2);
+    selected.forEach(upg => {
+      const btn = document.createElement('button');
+      btn.textContent = upg.label;
+      btn.onclick = () => chooseUpgrade(upg.id);
+      menu.appendChild(btn);
+    });
+    showMenu(menu);
+  }
+  function chooseUpgrade(type) {
+    if(type === 'damage') damageBonus++;
+    else if(type === 'firerate') bulletSpeed += 2;
+    else if(type === 'speed') player.speed += 0.3;
+    else if(type === 'heart') { player.health++; healthDisplay.textContent = player.health; }
+    else if(type === 'reloadBoost') player.reloadTime = Math.max(200, player.reloadTime * 0.75);
+    menus.style.display = 'none';
+    info.style.display = 'block';
+    pendingUpgrade = false;
+    spawnEnemies();
+  }
+
+  // Spawn enemies
+  function spawnEnemies() {
+    enemies = [];
+    const isBossWave = (wave % 5 === 0);
+    const safeDistance = 400;
+
+    function getRandomSafePos() {
+      let x, y, dist;
+      do {
+        x = Math.random() * width;
+        y = Math.random() * height;
+        dist = Math.hypot(player.x - x, player.y - y);
+      } while(dist < safeDistance);
+      return {x, y};
+    }
+
+    if(isBossWave) {
+      const pos = getRandomSafePos();
+      enemies.push({x:pos.x, y:pos.y, size:60, speed:2 + wave*0.05, alive:true, hp:50 + wave*3, isBoss:true, name:"Oiseau"});
+    }
+
+    const total = Math.floor(8 + wave*1.5);
+    for(let i=0; i<total; i++) {
+      const pos = getRandomSafePos();
+      enemies.push({x:pos.x, y:pos.y, size:18 + wave*0.3, speed:1.8 + Math.log(wave+1)*0.6, alive:true, hp: wave + Math.floor(wave/2), isBoss:false, name:"Libellule"});
+    }
+
+    const pos = getRandomSafePos();
+    enemies.push({x:pos.x, y:pos.y, size:30 + Math.log(wave+1)*1.5, speed:1.2 + wave*0.2, alive:true, hp:wave*4, isBoss:false, name:"Souris Z-"+wave});
+  }
+
+  // Game loop
+  function loop() {
+    animationId = requestAnimationFrame(loop);
+    if(isPaused) return;
+    update();
+    updateChats();
+    draw();
+  }
+
+  // Menu show/hide
+  const menus = document.getElementById('menus');
+  function showMenu(content) {
+    if(typeof content === 'string') menus.innerHTML = content;
+    else {
+      menus.innerHTML = '';
+      menus.appendChild(content);
+    }
+    menus.style.display = 'flex';
+  }
+
+  // Start game
   function startGame() {
     gameStarted = true;
     gameOver = false;
@@ -383,81 +840,26 @@
     loop();
   }
 
-  window.addEventListener('keydown', e => {
-    const key = e.key.toLowerCase();
-    keys[key] = true;
-    if (key === 'r' && !player.isReloading && player.ammo < 25) reload();
-    if (key === 'escape' && gameStarted && !gameOver && !pendingUpgrade) togglePause();
-  });
-  window.addEventListener('keyup', e => { keys[e.key.toLowerCase()] = false; });
-
-  window.addEventListener('mousedown', () => { if (!isPaused) shoot(); });
-
-  // Visée souris / tactile
-  let joystickActive = false;
-  window.addEventListener('mousemove', e => {
-    if (joystickActive) return;
-    const rect = container.getBoundingClientRect();
-    mouseX = e.clientX - rect.left;
-    mouseY = e.clientY - rect.top;
-    player.angle = Math.atan2(mouseY - player.y, mouseX - player.x);
-  });
-
-  // Background fixe
-  function createBackground() {
-    bgCtx.fillStyle = '#88cc55';
-    bgCtx.fillRect(0, 0, width, height);
-    for (let i = 0; i < 300; i++) {
-      const x = Math.random() * width;
-      const y = Math.random() * height;
-      const size = Math.random() * 2 + 1;
-      bgCtx.fillStyle = 'rgba(34, 85, 12, ' + (Math.random() * 0.5 + 0.3) + ')';
-      bgCtx.beginPath();
-      bgCtx.ellipse(x, y, size * 0.5, size, 0, 0, Math.PI * 2);
-      bgCtx.fill();
-    }
-    const flowerColors = ['#ff6699', '#ffcc33', '#ff9966', '#ff66cc', '#cc3366'];
-    for (let i = 0; i < 50; i++) {
-      const x = Math.random() * width;
-      const y = Math.random() * height;
-      const petalSize = 5;
-      const centerColor = flowerColors[Math.floor(Math.random() * flowerColors.length)];
-      for (let angle = 0; angle < 2 * Math.PI; angle += Math.PI / 2) {
-        bgCtx.fillStyle = 'white';
-        bgCtx.beginPath();
-        bgCtx.ellipse(x + Math.cos(angle) * petalSize, y + Math.sin(angle) * petalSize, petalSize * 0.6, petalSize * 0.9, angle, 0, Math.PI * 2);
-        bgCtx.fill();
-      }
-      bgCtx.fillStyle = centerColor;
-      bgCtx.beginPath();
-      bgCtx.arc(x, y, petalSize * 0.8, 0, Math.PI * 2);
-      bgCtx.fill();
-    }
-  }
-
-  function drawBackground() {
-    ctx.drawImage(backgroundCanvas, 0, 0);
-  }
-
+  // Pause toggle
   function togglePause() {
     isPaused = !isPaused;
-    if (isPaused) {
-      if (animationFrameId !== null) {
-        cancelAnimationFrame(animationFrameId);
-        animationFrameId = null;
+    if(isPaused) {
+      if(animationId !== null) {
+        cancelAnimationFrame(animationId);
+        animationId = null;
       }
       showMenu(
-        '<div>Jeu en pause</div>' +
-        '<button id="resumeBtn">Reprendre</button>' +
-        '<button id="fullscreenBtn">Plein écran</button>'
+        `<div>Jeu en pause</div>
+        <button id="resumeBtn">Reprendre</button>
+        <button id="fullscreenBtn">Plein écran</button>`
       );
       info.style.display = 'none';
 
       document.getElementById('resumeBtn').onclick = togglePause;
-      document.getElementById('fullscreenBtn').onclick = function() {
-        if (container.requestFullscreen) container.requestFullscreen();
-        else if (container.webkitRequestFullscreen) container.webkitRequestFullscreen();
-        else if (container.msRequestFullscreen) container.msRequestFullscreen();
+      document.getElementById('fullscreenBtn').onclick = () => {
+        if(container.requestFullscreen) container.requestFullscreen();
+        else if(container.webkitRequestFullscreen) container.webkitRequestFullscreen();
+        else if(container.msRequestFullscreen) container.msRequestFullscreen();
       };
     } else {
       menus.style.display = 'none';
@@ -466,544 +868,47 @@
     }
   }
 
-  function bordure() {
-    player.x = Math.max(player.size, Math.min(width - player.size, player.x));
-    player.y = Math.max(player.size, Math.min(height - player.size, player.y));
+  // Elements
+  const info = document.getElementById('info');
+  const ammoDisplay = document.getElementById('ammoCount');
+  const healthDisplay = document.getElementById('healthCount');
+  const waveDisplay = document.getElementById('waveCount');
+  const scoreDisplay = document.getElementById('scoreCount');
+
+  // Reload message (on ammo empty)
+  const reloadMessage = document.createElement('div');
+  reloadMessage.style.position = 'fixed';
+  reloadMessage.style.top = '50%';
+  reloadMessage.style.left = '50%';
+  reloadMessage.style.transform = 'translate(-50%, -50%)';
+  reloadMessage.style.color = 'white';
+  reloadMessage.style.background = 'rgba(0,0,0,0.7)';
+  reloadMessage.style.padding = '12px 24px';
+  reloadMessage.style.borderRadius = '12px';
+  reloadMessage.style.fontSize = '20px';
+  reloadMessage.style.display = 'none';
+  reloadMessage.style.zIndex = '3000';
+  reloadMessage.textContent = 'Appuie sur R pour recharger !';
+  document.body.appendChild(reloadMessage);
+
+  // Show touch controls only on touch devices
+  const touchControls = document.getElementById('touchControls');
+  function isTouchDevice() {
+    return 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+  }
+  if(isTouchDevice()) {
+    touchControls.classList.add('active');
   }
 
-  function showMenu(content) {
-    menus.innerHTML = '';
-    menus.style.display = 'flex';
-    if (typeof content === 'string') menus.innerHTML = content;
-    else menus.appendChild(content);
-  }
-
-  function reload() {
-    player.isReloading = true;
-    player.reloadStartTime = Date.now();
-    setTimeout(() => {
-      player.ammo = 25;
-      ammoDisplay.textContent = player.ammo;
-      player.isReloading = false;
-    }, player.reloadTime);
-  }
-
-  function shoot() {
-    if (!gameStarted || player.isReloading || gameOver || pendingUpgrade || isPaused) return;
-    if (player.ammo <= 0) {
-      reloadMessage.style.display = 'block';
-      setTimeout(() => { reloadMessage.style.display = 'none'; }, 1500);
-      return;
-    }
-    player.ammo--;
-    ammoDisplay.textContent = player.ammo;
-    const bulletSize = player.bigBullets ? 10 : 5;
-    if (player.multiShot) {
-      bullets.push({ x: player.x, y: player.y, angle: player.angle + 0.1, size: bulletSize });
-      bullets.push({ x: player.x, y: player.y, angle: player.angle - 0.1, size: bulletSize });
-    } else {
-      bullets.push({ x: player.x, y: player.y, angle: player.angle, size: bulletSize });
-    }
-  }
-
-  function update() {
-    if (!gameStarted || gameOver || pendingUpgrade) return;
-
-    if (keys['z']) player.y -= player.speed;
-    if (keys['s']) player.y += player.speed;
-    if (keys['q']) player.x -= player.speed;
-    if (keys['d']) player.x += player.speed;
-
-    bordure();
-
-    for (let i = bullets.length - 1; i >= 0; i--) {
-      const b = bullets[i];
-      b.x += Math.cos(b.angle) * bulletSpeed;
-      b.y += Math.sin(b.angle) * bulletSpeed;
-
-      for (let j = 0; j < enemies.length; j++) {
-        const e = enemies[j];
-        if (e.alive && Math.hypot(b.x - e.x, b.y - e.y) < e.size + b.size) {
-          e.hp -= 1 + damageBonus;
-          if (e.hp <= 0) {
-            e.alive = false;
-            if (e.isBoss) {
-              const reward = Math.random() < 0.5 ? 'multiShot' : 'bigBullets';
-              if (reward === 'multiShot') player.multiShot = true;
-              else if (reward === 'bigBullets') player.bigBullets = true;
-            }
-            score++;
-            scoreDisplay.textContent = score;
-          }
-          bullets.splice(i, 1);
-          break;
-        }
-      }
-    }
-
-    for (let k = 0; k < enemies.length; k++) {
-      const enemy = enemies[k];
-      if (!enemy.alive) continue;
-      const dxE = player.x - enemy.x;
-      const dyE = player.y - enemy.y;
-      const dist = Math.hypot(dxE, dyE);
-      enemy.x += (dxE / dist) * enemy.speed;
-      enemy.y += (dyE / dist) * enemy.speed;
-      if (dist < enemy.size + player.size) {
-        enemy.alive = false;
-        player.health--;
-        healthDisplay.textContent = player.health;
-        if (player.health <= 0) {
-          gameOver = true;
-          showMenu(`<div>Tu es mort à la vague ${wave} avec un score de ${score}</div><button onclick="location.reload()">Rejouer</button>`);
-        }
-      }
-    }
-
-    if (enemies.every(e => !e.alive)) {
-      wave++;
-      waveDisplay.textContent = wave;
-      pendingUpgrade = true;
-      info.style.display = 'none';
-      showUpgradeMenu();
-    }
-  }
-
-  function updateChats() {
-    for (let i = chats.length - 1; i >= 0; i--) {
-      const chat = chats[i];
-      const dx = player.x - chat.x;
-      const dy = player.y - chat.y;
-      const dist = Math.hypot(dx, dy);
-      if (dist > 20) {
-        chat.x += (dx / dist) * chat.speed;
-        chat.y += (dy / dist) * chat.speed;
-      }
-      for (let j = 0; j < enemies.length; j++) {
-        const e = enemies[j];
-        if (e.alive && Math.hypot(chat.x - e.x, chat.y - e.y) < chat.size + e.size) {
-          e.alive = false;
-          croixNoisette.push({ x: chat.x, y: chat.y });
-          chats.splice(i, 1);
-          score++;
-          scoreDisplay.textContent = score;
-          break;
-        }
-      }
-    }
-  }
-
-  function draw() {
-    drawBackground();
-
-    ctx.fillStyle = '#4caf50';
-    ctx.beginPath();
-    ctx.moveTo(player.x + Math.cos(player.angle) * player.size, player.y + Math.sin(player.angle) * player.size);
-    ctx.lineTo(player.x + Math.cos(player.angle + 2.5) * player.size * 0.7, player.y + Math.sin(player.angle + 2.5) * player.size * 0.7);
-    ctx.lineTo(player.x + Math.cos(player.angle - 2.5) * player.size * 0.7, player.y + Math.sin(player.angle - 2.5) * player.size * 0.7);
-    ctx.closePath();
-    ctx.fill();
-
-    ctx.fillStyle = 'white';
-    ctx.font = '14px monospace';
-    ctx.textAlign = 'center';
-    ctx.fillText(playerName, player.x, player.y - player.size - 30);
-    ctx.fillText(player.health + "❤", player.x, player.y - player.size - 15);
-
-    if (player.isReloading) {
-      const elapsed = Date.now() - player.reloadStartTime;
-      const percent = Math.min(elapsed / player.reloadTime, 1);
-      ctx.fillStyle = 'black';
-      ctx.fillRect(player.x - 20, player.y + player.size + 10, 40, 6);
-      ctx.fillStyle = '#00ff00';
-      ctx.fillRect(player.x - 20, player.y + player.size + 10, 40 * percent, 6);
-    }
-
-    bullets.forEach(b => {
-      ctx.fillStyle = '#ffff00';
-      ctx.beginPath();
-      ctx.arc(b.x, b.y, b.size, 0, Math.PI * 2);
-      ctx.fill();
-    });
-
-    chats.forEach(chat => {
-      ctx.fillStyle = '#ffaa33';
-      ctx.beginPath();
-      ctx.ellipse(chat.x, chat.y, chat.size * 1.2, chat.size, 0, 0, Math.PI * 2);
-      ctx.fill();
-
-      ctx.fillStyle = '#ffaa33';
-      ctx.beginPath();
-      ctx.arc(chat.x, chat.y - chat.size * 1.2, chat.size * 0.8, 0, Math.PI * 2);
-      ctx.fill();
-
-      ctx.fillStyle = '#ff9933';
-      ctx.beginPath();
-      ctx.moveTo(chat.x - chat.size * 0.5, chat.y - chat.size * 1.7);
-      ctx.lineTo(chat.x - chat.size * 0.2, chat.y - chat.size * 1.5);
-      ctx.lineTo(chat.x - chat.size * 0.4, chat.y - chat.size * 1.3);
-      ctx.closePath();
-      ctx.fill();
-
-      ctx.beginPath();
-      ctx.moveTo(chat.x + chat.size * 0.5, chat.y - chat.size * 1.7);
-      ctx.lineTo(chat.x + chat.size * 0.2, chat.y - chat.size * 1.5);
-      ctx.lineTo(chat.x + chat.size * 0.4, chat.y - chat.size * 1.3);
-      ctx.closePath();
-      ctx.fill();
-
-      ctx.fillStyle = 'black';
-      ctx.beginPath();
-      ctx.ellipse(chat.x - chat.size * 0.25, chat.y - chat.size * 1.2, chat.size * 0.15, chat.size * 0.25, 0, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.beginPath();
-      ctx.ellipse(chat.x + chat.size * 0.25, chat.y - chat.size * 1.2, chat.size * 0.15, chat.size * 0.25, 0, 0, Math.PI * 2);
-      ctx.fill();
-
-      ctx.beginPath();
-      ctx.moveTo(chat.x, chat.y - chat.size * 1.0);
-      ctx.lineTo(chat.x - chat.size * 0.15, chat.y - chat.size * 0.85);
-      ctx.lineTo(chat.x + chat.size * 0.15, chat.y - chat.size * 0.85);
-      ctx.closePath();
-      ctx.fillStyle = '#cc6600';
-      ctx.fill();
-
-      ctx.fillStyle = 'white';
-      ctx.font = '12px monospace';
-      ctx.fillText("Noisette", chat.x, chat.y - chat.size - 10);
-    });
-
-    enemies.forEach(e => {
-      if (!e.alive) return;
-
-      if (e.isBoss) {
-        const size = e.size;
-        ctx.save();
-        ctx.translate(e.x, e.y);
-        ctx.rotate(e.speed * 0.1);
-
-        ctx.fillStyle = '#ff00ff';
-        ctx.beginPath();
-        ctx.ellipse(0, 0, size * 0.7, size * 1.1, 0, 0, Math.PI * 2);
-        ctx.fill();
-
-        ctx.fillStyle = '#cc00cc';
-        ctx.beginPath();
-        ctx.arc(0, -size * 1.0, size * 0.5, 0, Math.PI * 2);
-        ctx.fill();
-
-        ctx.fillStyle = '#ff88ff';
-        ctx.beginPath();
-        ctx.moveTo(0, -size * 1.3);
-        ctx.lineTo(size * 0.3, -size * 0.9);
-        ctx.lineTo(-size * 0.3, -size * 0.9);
-        ctx.closePath();
-        ctx.fill();
-
-        ctx.fillStyle = '#dd00dd';
-        ctx.beginPath();
-        ctx.ellipse(-size * 0.8, 0, size * 0.3, size * 0.8, Math.PI / 6, 0, Math.PI * 2);
-        ctx.fill();
-
-        ctx.beginPath();
-        ctx.ellipse(size * 0.8, 0, size * 0.3, size * 0.8, -Math.PI / 6, 0, Math.PI * 2);
-        ctx.fill();
-
-        ctx.restore();
-
-        ctx.fillStyle = 'white';
-        ctx.font = '14px monospace';
-        ctx.textAlign = 'center';
-        ctx.fillText(e.name + " " + e.hp + "❤", e.x, e.y - e.size - 10);
-
-      } else {
-        if (e.name.startsWith("Libellule")) {
-          ctx.fillStyle = '#d32f2f';
-          ctx.beginPath();
-          ctx.ellipse(e.x, e.y, e.size * 0.5, e.size * 1.5, 0, 0, Math.PI * 2);
-          ctx.fill();
-
-          ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
-          const wingLength = e.size * 1.8;
-          const wingWidth = e.size * 0.5;
-
-          ctx.beginPath();
-          ctx.ellipse(e.x - wingWidth, e.y - wingLength * 0.5, wingWidth, wingLength, Math.PI / 4, 0, Math.PI * 2);
-          ctx.fill();
-
-          ctx.beginPath();
-          ctx.ellipse(e.x + wingWidth, e.y - wingLength * 0.5, wingWidth, wingLength, -Math.PI / 4, 0, Math.PI * 2);
-          ctx.fill();
-
-          ctx.beginPath();
-          ctx.ellipse(e.x - wingWidth, e.y + wingLength * 0.5, wingWidth, wingLength, -Math.PI / 4, 0, Math.PI * 2);
-          ctx.fill();
-
-          ctx.beginPath();
-          ctx.ellipse(e.x + wingWidth, e.y + wingLength * 0.5, wingWidth, wingLength, Math.PI / 4, 0, Math.PI * 2);
-          ctx.fill();
-
-          ctx.fillStyle = '#b22222';
-          ctx.beginPath();
-          ctx.arc(e.x, e.y - e.size * 1.2, e.size * 0.6, 0, Math.PI * 2);
-          ctx.fill();
-
-          ctx.fillStyle = 'black';
-          ctx.beginPath();
-          ctx.arc(e.x - e.size * 0.2, e.y - e.size * 1.3, e.size * 0.1, 0, Math.PI * 2);
-          ctx.arc(e.x + e.size * 0.2, e.y - e.size * 1.3, e.size * 0.1, 0, Math.PI * 2);
-          ctx.fill();
-
-          ctx.fillStyle = 'white';
-          ctx.font = '14px monospace';
-          ctx.textAlign = 'center';
-          ctx.fillText(e.name + " " + e.hp + "❤", e.x, e.y - e.size - 10);
-
-        } else if (e.name.startsWith("Souris")) {
-          ctx.fillStyle = '#a0522d';
-          ctx.beginPath();
-          ctx.ellipse(e.x, e.y, e.size * 1.2, e.size * 0.8, 0, 0, Math.PI * 2);
-          ctx.fill();
-
-          ctx.fillStyle = '#8b4513';
-          ctx.beginPath();
-          ctx.arc(e.x + e.size * 1.0, e.y - e.size * 0.2, e.size * 0.7, 0, Math.PI * 2);
-          ctx.fill();
-
-          ctx.fillStyle = '#deb887';
-          ctx.beginPath();
-          ctx.arc(e.x + e.size * 1.4, e.y - e.size * 0.8, e.size * 0.3, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.beginPath();
-          ctx.arc(e.x + e.size * 0.7, e.y - e.size * 0.9, e.size * 0.25, 0, Math.PI * 2);
-          ctx.fill();
-
-          ctx.fillStyle = 'black';
-          ctx.beginPath();
-          ctx.arc(e.x + e.size * 1.0, e.y - e.size * 0.3, e.size * 0.15, 0, Math.PI * 2);
-          ctx.fill();
-
-          ctx.strokeStyle = '#8b4513';
-          ctx.lineWidth = 4;
-          ctx.beginPath();
-          ctx.moveTo(e.x - e.size * 1.2, e.y + e.size * 0.5);
-          ctx.quadraticCurveTo(e.x - e.size * 1.8, e.y + e.size * 1.5, e.x - e.size * 1.0, e.y + e.size * 2.0);
-          ctx.stroke();
-
-          ctx.fillStyle = 'white';
-          ctx.font = '14px monospace';
-          ctx.textAlign = 'center';
-          ctx.fillText(e.name + " " + e.hp + "❤", e.x, e.y - e.size - 10);
-        }
-      }
-    });
-
-    croixNoisette.forEach(c => {
-      ctx.strokeStyle = 'black';
-      ctx.lineWidth = 5;
-      const crossHeight = 50;
-      const crossWidth = 20;
-      const crossBarHeight = 15;
-      const barWidth = 30;
-
-      ctx.beginPath();
-      ctx.moveTo(c.x, c.y - crossHeight / 2);
-      ctx.lineTo(c.x, c.y + crossHeight / 2);
-      ctx.stroke();
-
-      ctx.beginPath();
-      ctx.moveTo(c.x - barWidth / 2, c.y - crossHeight / 2 + crossBarHeight);
-      ctx.lineTo(c.x + barWidth / 2, c.y - crossHeight / 2 + crossBarHeight);
-      ctx.stroke();
-    });
-  }
-
-  function showUpgradeMenu() {
-    const menu = document.createElement('div');
-    menu.innerHTML = '<div>Choisis ton bonus :</div>';
-    const upgrades = [
-      { id: 'damage', label: '+ Dégâts' },
-      { id: 'firerate', label: '+ Vitesse des balles' },
-      { id: 'speed', label: '+ Vitesse de déplacement' },
-      { id: 'heart', label: '+1 vie' },
-      { id: 'reloadBoost', label: 'Recharge plus rapide' }
-    ];
-    const selected = upgrades.sort(() => 0.5 - Math.random()).slice(0, 2);
-    selected.forEach(upg => {
-      const btn = document.createElement('button');
-      btn.textContent = upg.label;
-      btn.onclick = () => chooseUpgrade(upg.id);
-      menu.appendChild(btn);
-    });
-    showMenu(menu);
-  }
-
-  function chooseUpgrade(type) {
-    if(type === 'damage') damageBonus++;
-    else if(type === 'firerate') bulletSpeed += 2;
-    else if(type === 'speed') player.speed += 0.3;
-    else if(type === 'heart') { player.health++; healthDisplay.textContent = player.health; }
-    else if(type === 'reloadBoost') player.reloadTime = Math.max(200, player.reloadTime * 0.75);
-    menus.style.display = 'none';
-    info.style.display = 'block';
-    pendingUpgrade = false;
-    spawnEnemies();
-  }
-
-  function spawnEnemies() {
-    enemies = [];
-    const isBossWave = wave % 5 === 0;
-    const safeDistance = 400;
-
-    function getRandomSafePos() {
-      let x, y, dist;
-      do {
-        x = Math.random() * width;
-        y = Math.random() * height;
-        dist = Math.hypot(player.x - x, player.y - y);
-      } while (dist < safeDistance);
-      return {x, y};
-    }
-
-    if (isBossWave) {
-      const pos = getRandomSafePos();
-      enemies.push({ x: pos.x, y: pos.y, size: 60, speed: 2 + wave * 0.05, alive: true, hp: 50 + wave * 3, isBoss: true, name: "Oiseau" });
-    }
-
-    const total = Math.floor(8 + wave * 1.5);
-    for (let i = 0; i < total; i++) {
-      const pos = getRandomSafePos();
-      enemies.push({ x: pos.x, y: pos.y, size: 18 + wave * 0.3, speed: 1.8 + Math.log(wave + 1) * 0.6, alive: true, hp: wave + Math.floor(wave / 2), isBoss: false, name: "Libellule" });
-    }
-
-    const pos = getRandomSafePos();
-    enemies.push({ x: pos.x, y: pos.y, size: 30 + Math.log(wave + 1) * 1.5, speed: 1.2 + (wave * 0.2), alive: true, hp: wave * 4, isBoss: false, name: "Souris Z-" + wave });
-  }
-
-  function loop() {
-    animationFrameId = requestAnimationFrame(loop);
-    if (isPaused) return;
-    update();
-    updateChats();
-    draw();
-  }
-
-  // Initial resize
-  resizeCanvas();
-
-  showMenu(
-    `<div>Entrez votre nom de guerrier galactique :</div>
-     <input type="text" id="playerNameInput" placeholder="MC Alex" />
-     <button id="startBtn">Démarrer</button>`
-  );
-
+  // Start button listener
   const startBtn = document.getElementById('startBtn');
   startBtn.addEventListener('click', () => {
     playerName = document.getElementById('playerNameInput').value.trim() || "MC Alex";
     startGame();
   });
 
-  // --- Touch controls ---
-
-  function isTouchDevice() {
-    return 'ontouchstart' in window || navigator.maxTouchPoints > 0;
-  }
-
-  const touchControls = document.getElementById('touchControls');
-  if (isTouchDevice()) {
-    touchControls.style.display = 'flex';
-  }
-
-  // Joystick tactile pour viser
-  const joystickBase = document.getElementById('joystickBase');
-  const joystickKnob = document.getElementById('joystickKnob');
-  let joystickActive = false;
-  let joystickCenter = { x: 0, y: 0 };
-  let joystickPos = { x: 0, y: 0 };
-
-  joystickBase.addEventListener('touchstart', e => {
-    e.preventDefault();
-    joystickActive = true;
-    const rect = joystickBase.getBoundingClientRect();
-    joystickCenter.x = rect.left + rect.width / 2;
-    joystickCenter.y = rect.top + rect.height / 2;
-    const touch = e.touches[0];
-    setKnobPosition(touch.clientX, touch.clientY);
-    updateJoystickAngle();
-  });
-
-  joystickBase.addEventListener('touchmove', e => {
-    e.preventDefault();
-    if (!joystickActive) return;
-    const touch = e.touches[0];
-    setKnobPosition(touch.clientX, touch.clientY);
-    updateJoystickAngle();
-  });
-
-  joystickBase.addEventListener('touchend', e => {
-    e.preventDefault();
-    joystickActive = false;
-    joystickKnob.style.left = '50%';
-    joystickKnob.style.top = '50%';
-  });
-
-  function updateJoystickAngle() {
-    const dx = joystickPos.x - joystickCenter.x;
-    const dy = joystickPos.y - joystickCenter.y;
-    if (dx === 0 && dy === 0) return;
-    player.angle = Math.atan2(dy, dx);
-  }
-
-  function setKnobPosition(x, y) {
-    const maxDistance = joystickBase.clientWidth / 2;
-    const dx = x - joystickCenter.x;
-    const dy = y - joystickCenter.y;
-    let dist = Math.sqrt(dx*dx + dy*dy);
-    if (dist > maxDistance) {
-      const ratio = maxDistance / dist;
-      joystickPos.x = joystickCenter.x + dx * ratio;
-      joystickPos.y = joystickCenter.y + dy * ratio;
-    } else {
-      joystickPos.x = x;
-      joystickPos.y = y;
-    }
-    joystickKnob.style.left = joystickPos.x + 'px';
-    joystickKnob.style.top = joystickPos.y + 'px';
-  }
-
-  // Touch buttons déplacement en pyramide
-  const keyMap = {
-    btnUp: 'z',
-    btnLeft: 'q',
-    btnDown: 's',
-    btnRight: 'd'
-  };
-
-  Object.entries(keyMap).forEach(([btnId, key]) => {
-    const btn = document.getElementById(btnId);
-    btn.addEventListener('touchstart', e => {
-      e.preventDefault();
-      keys[key] = true;
-    });
-    btn.addEventListener('touchend', e => {
-      e.preventDefault();
-      keys[key] = false;
-    });
-  });
-
-  // Bouton reload
-  const btnReload = document.getElementById('btnReload');
-  btnReload.addEventListener('touchstart', e => {
-    e.preventDefault();
-    if (!player.isReloading && player.ammo < 25) reload();
-  });
-
-  // Bouton pause
-  const btnPause = document.getElementById('btnPause');
-  btnPause.addEventListener('touchstart', e => {
-    e.preventDefault();
-    togglePause();
-  });
+  // Initial resize & background
+  resizeCanvas();
 </script>
 </body>
 </html>
